@@ -26,6 +26,7 @@ export default class ResumableFile extends ResumableEventHandler {
   private _prevProgress: number = 0;
   private isPaused: boolean = false;
 
+  // todo #23 (check all class properties)
   file: File;
   fileName: string;
   size: number;
@@ -105,6 +106,7 @@ export default class ResumableFile extends ResumableEventHandler {
   /**
    * Prepare this file for a new upload, by dividing it into multiple chunks
    */
+  // todo #23
   bootstrap(): void {
     const progressHandler = (message, chunk) => {
       this.fire('chunkProgress', chunk, message);

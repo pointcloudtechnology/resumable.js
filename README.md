@@ -213,7 +213,7 @@ See the note above about using an HTML span instead of an actual button.
 * `.fileCategory` The file category this file belongs to.
 * `.uniqueIdentifier` A unique identifier assigned to this file object. This value is included in uploads to the server for reference, but can also be used in CSS classes etc when building your upload UI.
 * `.chunks` An array of `ResumableChunk` items. You shouldn't need to dig into these.
-* `.isUploading` *[readonly]* A boolean indicating whether file chunks is uploading.
+* `.isUploading` *[readonly]* A boolean indicating whether file chunks are uploading.
 * `.isComplete` *[readonly]* A boolean indicating whether the file has completed uploading and received a server response.
 
 #### Methods

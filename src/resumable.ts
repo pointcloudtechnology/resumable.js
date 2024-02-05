@@ -36,34 +36,34 @@ export class Resumable extends ResumableEventHandler {
   private support: boolean;
 
   // Configuration Options
-  // todo #23 (check all class properties)
-  clearInput: boolean = true;
-  dragOverClass: string = 'dragover';
-  fileCategories: string[] = [];
-  defaultFileCategory: string | null = 'default';
-  fileTypes: string[] | {[fileCategory: string]: string[]} = [];
-  fileTypeErrorCallback: Function = (file) => {
+  private clearInput: boolean = true;
+  private dragOverClass: string = 'dragover';
+  private fileCategories: string[] = [];
+  private defaultFileCategory: string | null = 'default';
+  private fileTypes: string[] | {[fileCategory: string]: string[]} = [];
+  private fileTypeErrorCallback: Function = (file) => {
     alert(`${file.fileName || file.name} has an unsupported file type.`);
   };
-  _generateUniqueIdentifier: Function = null;
-  maxFileSize?: number;
-  maxFileSizeErrorCallback: Function = (file) => {
+  // todo: this is currently a bit broken because setInstanceProperties will override the function and not this property
+  private _generateUniqueIdentifier: Function = null;
+  private maxFileSize?: number;
+  private maxFileSizeErrorCallback: Function = (file) => {
     alert(file.fileName || file.name + ' is too large, please upload files less than ' +
       Helpers.formatSize(this.maxFileSize) + '.');
   };
-  maxFiles?: number;
-  maxFilesErrorCallback: Function = (files) => {
+  private maxFiles?: number;
+  private maxFilesErrorCallback: Function = (files) => {
     var maxFiles = this.maxFiles;
     alert('Please upload no more than ' + maxFiles + ' file' + (maxFiles === 1 ? '' : 's') + ' at a time.');
   };
-  minFileSize: number = 1;
-  minFileSizeErrorCallback: Function = (file) => {
+  private minFileSize: number = 1;
+  private minFileSizeErrorCallback: Function = (file) => {
     alert(file.fileName || file.name + ' is too small, please upload files larger than ' +
       Helpers.formatSize(this.minFileSize) + '.');
   };
-  prioritizeFirstAndLastChunk: boolean = false;
-  fileValidationErrorCallback: Function = (file) => {};
-  simultaneousUploads: number = 3;
+  private prioritizeFirstAndLastChunk: boolean = false;
+  private fileValidationErrorCallback: Function = (file) => {};
+  private simultaneousUploads: number = 3;
 
   constructor(options: ResumableConfiguration = {}) {
     super();

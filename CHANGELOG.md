@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * Let all events from files and chunks bubble up and make them accessible for users (#20)
+* Update readme (#24)
 
 ### Removed
 

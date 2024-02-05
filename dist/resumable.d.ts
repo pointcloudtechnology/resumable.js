@@ -17,24 +17,22 @@ export declare class Resumable extends ResumableEventHandler {
     private uncompletedFileCategories;
     private validators;
     private support;
-    clearInput: boolean;
-    dragOverClass: string;
-    fileCategories: string[];
-    defaultFileCategory: string | null;
-    fileTypes: string[] | {
-        [fileCategory: string]: string[];
-    };
-    fileTypeErrorCallback: Function;
-    _generateUniqueIdentifier: Function;
-    maxFileSize?: number;
-    maxFileSizeErrorCallback: Function;
-    maxFiles?: number;
-    maxFilesErrorCallback: Function;
-    minFileSize: number;
-    minFileSizeErrorCallback: Function;
-    prioritizeFirstAndLastChunk: boolean;
-    fileValidationErrorCallback: Function;
-    simultaneousUploads: number;
+    private clearInput;
+    private dragOverClass;
+    private fileCategories;
+    private defaultFileCategory;
+    private fileTypes;
+    private fileTypeErrorCallback;
+    private generateUniqueIdentifier;
+    private maxFileSize?;
+    private maxFileSizeErrorCallback;
+    private maxFiles?;
+    private maxFilesErrorCallback;
+    private minFileSize;
+    private minFileSizeErrorCallback;
+    private prioritizeFirstAndLastChunk;
+    private fileValidationErrorCallback;
+    private simultaneousUploads;
     constructor(options?: ResumableConfiguration);
     /**
      * Check whether the current browser supports the essential functions for the package to work.
@@ -48,7 +46,7 @@ export declare class Resumable extends ResumableEventHandler {
     /**
      * Assign the attributes of this instance via destructuring of the options object.
      */
-    protected setInstanceProperties(options: ResumableConfiguration): void;
+    private setInstanceProperties;
     private sanitizeFileTypes;
     private throwIfUnknownFileCategory;
     /**
@@ -110,7 +108,7 @@ export declare class Resumable extends ResumableEventHandler {
      * @param event The event with which the file was provided originally
      * @param fileCategory The file category that has been provided for the file. Defaults to `defaultFileCategory`.
      */
-    private generateUniqueIdentifier;
+    private callGenerateUniqueIdentifier;
     /**
      * Queue a new chunk to be uploaded that is currently awaiting upload.
      */
@@ -215,7 +213,7 @@ export declare class Resumable extends ResumableEventHandler {
      * Check whether the upload is completed (if all files of a category are uploaded and if all files in general are
      * uploaded).
      */
-    checkUploadComplete(): void;
+    private checkUploadComplete;
     /**
      * Event Handlers: This section should only include methods that are used to
      * handle events coming from the files or chunks.

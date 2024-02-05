@@ -20,42 +20,42 @@ export default class ResumableChunk extends ResumableEventHandler {
     private xhr;
     private chunkSize;
     private fileParameterName;
-    chunkNumberParameterName: string;
-    chunkSizeParameterName: string;
-    currentChunkSizeParameterName: string;
-    totalSizeParameterName: string;
-    typeParameterName: string;
-    identifierParameterName: string;
-    fileCategoryParameterName: string;
-    fileNameParameterName: string;
-    relativePathParameterName: string;
-    totalChunksParameterName: string;
-    throttleProgressCallbacks: number;
-    query: object;
-    headers: object;
-    method: string;
-    uploadMethod: string;
-    testMethod: string;
-    parameterNamespace: string;
-    testChunks: boolean;
-    maxChunkRetries: number;
-    chunkRetryInterval?: number;
-    permanentErrors: number[];
-    withCredentials: boolean;
-    xhrTimeout: number;
-    chunkFormat: string;
-    setChunkTypeFromFile: boolean;
-    target: string;
-    testTarget: string;
+    private chunkNumberParameterName;
+    private chunkSizeParameterName;
+    private currentChunkSizeParameterName;
+    private totalSizeParameterName;
+    private typeParameterName;
+    private identifierParameterName;
+    private fileCategoryParameterName;
+    private fileNameParameterName;
+    private relativePathParameterName;
+    private totalChunksParameterName;
+    private throttleProgressCallbacks;
+    private query;
+    private headers;
+    private method;
+    private uploadMethod;
+    private testMethod;
+    private parameterNamespace;
+    private testChunks;
+    private maxChunkRetries;
+    private chunkRetryInterval?;
+    private permanentErrors;
+    private withCredentials;
+    private xhrTimeout;
+    private chunkFormat;
+    private setChunkTypeFromFile;
+    private target;
+    private testTarget;
     constructor(fileObj: ResumableFile, offset: number, options: ResumableConfiguration);
     /**
      * Set the options provided inside the configuration object on this instance
      */
-    protected setInstanceProperties(options: ResumableConfiguration): void;
+    private setInstanceProperties;
     /**
      * Set the header values for the current XMLHttpRequest
      */
-    setCustomHeaders(): void;
+    private setCustomHeaders;
     /**
      * Get query parameters for this chunk as an object, combined with custom parameters if provided
      */
@@ -72,7 +72,7 @@ export default class ResumableChunk extends ResumableEventHandler {
     /**
      * Makes a GET request without any data to see if the chunk has already been uploaded in a previous session
      */
-    test(): void;
+    private test;
     /**
      * Abort and reset a request
      */

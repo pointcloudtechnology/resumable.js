@@ -227,9 +227,9 @@ See the note above about using an HTML span instead of an actual button.
 ### ResumableChunk
 You should generally not need to mess around with the single chunks of a file. Usually working with the main `Resumable` object and sometimes with the `ResumableFile`s is enough. So use the following properties and functions with care!
 
-#### Properties
-* `.formattedQuery` *[readonly]* The query parameters for this chunk as an object, combined with custom parameters if provided.
-* `.status` *[readonly]* The status for this Chunk based on different parameters of the underlying [XMLHttpRequest](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest).
+#### Properties (readonly)
+* `.formattedQuery` The query parameters for this chunk as an object, combined with custom parameters if provided.
+* `.status` The status for this Chunk based on different parameters of the underlying [XMLHttpRequest](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest).
 
 #### Methods
 

@@ -37,37 +37,35 @@ export default class ResumableChunk extends ResumableEventHandler {
   private xhr: XMLHttpRequest = null;
 
   // Option properties
-  // todo #23 (check all class properties)
   private chunkSize: number = 1024 * 1024; // 1 MB
   private fileParameterName: string = 'file';
-  chunkNumberParameterName: string = 'resumableChunkNumber';
-  chunkSizeParameterName: string = 'resumableChunkSize';
-  currentChunkSizeParameterName: string = 'resumableCurrentChunkSize';
-  totalSizeParameterName: string = 'resumableTotalSize';
-  typeParameterName: string = 'resumableType';
-  identifierParameterName: string = 'resumableIdentifier';
-  fileCategoryParameterName: string = 'resumableFileCategory';
-  fileNameParameterName: string = 'resumableFilename';
-  relativePathParameterName: string = 'resumableRelativePath';
-  totalChunksParameterName: string = 'resumableTotalChunks';
-  throttleProgressCallbacks: number = 0.5;
-  query: object = {};
-  headers: object = {};
-  method: string = 'multipart';
-  uploadMethod: string = 'POST';
-  testMethod: string = 'GET';
-  parameterNamespace: string = '';
-  testChunks: boolean = true;
-  maxChunkRetries: number = 100;
-  chunkRetryInterval?: number = undefined;
-  permanentErrors: number[] = [400, 401, 403, 404, 409, 415, 500, 501];
-  withCredentials: boolean = false;
-  xhrTimeout: number = 0;
-  chunkFormat: string = 'blob';
-  setChunkTypeFromFile: boolean = false;
-  target: string = '/';
-  testTarget: string = '';
-
+  private chunkNumberParameterName: string = 'resumableChunkNumber';
+  private chunkSizeParameterName: string = 'resumableChunkSize';
+  private currentChunkSizeParameterName: string = 'resumableCurrentChunkSize';
+  private totalSizeParameterName: string = 'resumableTotalSize';
+  private typeParameterName: string = 'resumableType';
+  private identifierParameterName: string = 'resumableIdentifier';
+  private fileCategoryParameterName: string = 'resumableFileCategory';
+  private fileNameParameterName: string = 'resumableFilename';
+  private relativePathParameterName: string = 'resumableRelativePath';
+  private totalChunksParameterName: string = 'resumableTotalChunks';
+  private throttleProgressCallbacks: number = 0.5;
+  private query: object = {};
+  private headers: object = {};
+  private method: string = 'multipart';
+  private uploadMethod: string = 'POST';
+  private testMethod: string = 'GET';
+  private parameterNamespace: string = '';
+  private testChunks: boolean = true;
+  private maxChunkRetries: number = 100;
+  private chunkRetryInterval?: number = undefined;
+  private permanentErrors: number[] = [400, 401, 403, 404, 409, 415, 500, 501];
+  private withCredentials: boolean = false;
+  private xhrTimeout: number = 0;
+  private chunkFormat: string = 'blob';
+  private setChunkTypeFromFile: boolean = false;
+  private target: string = '/';
+  private testTarget: string = '';
 
   constructor(fileObj: ResumableFile, offset: number, options: ResumableConfiguration) {
     super();

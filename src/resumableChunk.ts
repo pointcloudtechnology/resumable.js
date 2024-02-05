@@ -86,15 +86,14 @@ export default class ResumableChunk extends ResumableEventHandler {
   /**
    * Set the options provided inside the configuration object on this instance
    */
-  protected setInstanceProperties(options: ResumableConfiguration): void {
+  private setInstanceProperties(options: ResumableConfiguration): void {
     Object.assign(this, options);
   }
 
   /**
    * Set the header values for the current XMLHttpRequest
    */
-  // todo #23
-  setCustomHeaders(): void {
+  private setCustomHeaders(): void {
     if (!this.xhr) {
       return;
     }
@@ -172,8 +171,7 @@ export default class ResumableChunk extends ResumableEventHandler {
   /**
    * Makes a GET request without any data to see if the chunk has already been uploaded in a previous session
    */
-  // todo #23
-  test(): void {
+  private test(): void {
     // Set up request and listen for event
     this.xhr = new XMLHttpRequest();
 

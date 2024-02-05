@@ -57,7 +57,7 @@ export default class ResumableFile extends ResumableEventHandler {
   /**
    * Set the options provided inside the configuration object on this instance
    */
-  protected setInstanceProperties(options: ResumableConfiguration) {
+  private setInstanceProperties(options: ResumableConfiguration) {
     Object.assign(this, options);
   }
 
@@ -106,8 +106,7 @@ export default class ResumableFile extends ResumableEventHandler {
   /**
    * Prepare this file for a new upload, by dividing it into multiple chunks
    */
-  // todo #23
-  bootstrap(): void {
+  private bootstrap(): void {
     const progressHandler = (message, chunk) => {
       this.fire('chunkProgress', chunk, message);
       this.fire('fileProgress', this, message);

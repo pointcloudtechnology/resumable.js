@@ -94,7 +94,7 @@ export class Resumable extends ResumableEventHandler {
   /**
    * Assign the attributes of this instance via destructuring of the options object.
    */
-  protected setInstanceProperties(options: ResumableConfiguration) {
+  private setInstanceProperties(options: ResumableConfiguration) {
     Object.assign(this, options);
 
     // Explicitly test for null because other falsy values could be used as default.

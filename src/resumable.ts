@@ -44,8 +44,7 @@ export class Resumable extends ResumableEventHandler {
   private fileTypeErrorCallback: Function = (file) => {
     alert(`${file.fileName || file.name} has an unsupported file type.`);
   };
-  // todo: this is currently a bit broken because setInstanceProperties will override the function and not this property
-  private _generateUniqueIdentifier: Function = null;
+  private generateUniqueIdentifier: Function = null;
   private maxFileSize?: number;
   private maxFileSizeErrorCallback: Function = (file) => {
     alert(file.fileName || file.name + ' is too large, please upload files less than ' +
@@ -412,7 +411,7 @@ export class Resumable extends ResumableEventHandler {
     // Add the unique identifier for every new file.
     // Since this might return a promise, we have to wait until it completed.
     const filesWithUniqueIdentifiers = await Promise.all(fileList.map(async (file: ExtendedFile): Promise<ExtendedFile> => {
-      file.uniqueIdentifier = await this.generateUniqueIdentifier(file, event, fileCategory);
+      file.uniqueIdentifier = await this.callGenerateUniqueIdentifier(file, event, fileCategory);
       return file;
     }));
 
@@ -455,9 +454,9 @@ export class Resumable extends ResumableEventHandler {
    * @param event The event with which the file was provided originally
    * @param fileCategory The file category that has been provided for the file. Defaults to `defaultFileCategory`.
    */
-  private generateUniqueIdentifier(file: File, event: Event, fileCategory: string = this.defaultFileCategory): string {
-    return typeof this._generateUniqueIdentifier === 'function' ?
-      this._generateUniqueIdentifier(file, event, fileCategory) : Helpers.generateUniqueIdentifier(file);
+  private callGenerateUniqueIdentifier(file: File, event: Event, fileCategory: string = this.defaultFileCategory): string {
+    return typeof this.generateUniqueIdentifier === 'function' ?
+      this.generateUniqueIdentifier(file, event, fileCategory) : Helpers.generateUniqueIdentifier(file);
   }
 
   /**

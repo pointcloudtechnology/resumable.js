@@ -1,6 +1,5 @@
 import ResumableChunk from './resumableChunk';
 import ResumableEventHandler from './resumableEventHandler';
-import { ResumableConfiguration } from './types/types';
 /**
  * A single file object that should be uploaded in multiple chunks
  */
@@ -8,20 +7,27 @@ export default class ResumableFile extends ResumableEventHandler {
     private opts;
     private _prevProgress;
     private isPaused;
-    file: File;
-    fileName: string;
-    size: number;
-    relativePath: string;
-    uniqueIdentifier: string;
-    fileCategory: string;
+    private _file;
+    private _fileName;
+    private _size;
+    private _relativePath;
+    private _uniqueIdentifier;
+    private _fileCategory;
     private _error;
-    chunks: ResumableChunk[];
+    private _chunks;
     private chunkSize;
     constructor(file: File, uniqueIdentifier: string, fileCategory: string, options: object);
     /**
      * Set the options provided inside the configuration object on this instance
      */
-    protected setInstanceProperties(options: ResumableConfiguration): void;
+    private setInstanceProperties;
+    get file(): File;
+    get fileName(): string;
+    get size(): number;
+    get relativePath(): string;
+    get uniqueIdentifier(): string;
+    get fileCategory(): string;
+    get chunks(): ResumableChunk[];
     /**
      * Stop current uploads for this file
      */
@@ -37,7 +43,7 @@ export default class ResumableFile extends ResumableEventHandler {
     /**
      * Prepare this file for a new upload, by dividing it into multiple chunks
      */
-    bootstrap(): void;
+    private bootstrap;
     /**
      * Get the progress for uploading this file based on the progress of the individual file chunks
      */

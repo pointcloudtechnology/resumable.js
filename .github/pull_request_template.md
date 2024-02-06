@@ -4,5 +4,5 @@
 
 # TODOs
 
-* [ ] I switched to the correct base branch (`main` branch of the PCT fork)
 * [ ] I ran `npm run build` and pushed the `dist` files if needed
+* [ ] I added an entry to the `CHANGELOG.md` for this PR

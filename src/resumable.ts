@@ -36,34 +36,33 @@ export class Resumable extends ResumableEventHandler {
   private support: boolean;
 
   // Configuration Options
-  // todo #23 (check all class properties)
-  clearInput: boolean = true;
-  dragOverClass: string = 'dragover';
-  fileCategories: string[] = [];
-  defaultFileCategory: string | null = 'default';
-  fileTypes: string[] | {[fileCategory: string]: string[]} = [];
-  fileTypeErrorCallback: Function = (file) => {
+  private clearInput: boolean = true;
+  private dragOverClass: string = 'dragover';
+  private fileCategories: string[] = [];
+  private defaultFileCategory: string | null = 'default';
+  private fileTypes: string[] | {[fileCategory: string]: string[]} = [];
+  private fileTypeErrorCallback: Function = (file) => {
     alert(`${file.fileName || file.name} has an unsupported file type.`);
   };
-  _generateUniqueIdentifier: Function = null;
-  maxFileSize?: number;
-  maxFileSizeErrorCallback: Function = (file) => {
+  private generateUniqueIdentifier: Function = null;
+  private maxFileSize?: number;
+  private maxFileSizeErrorCallback: Function = (file) => {
     alert(file.fileName || file.name + ' is too large, please upload files less than ' +
       Helpers.formatSize(this.maxFileSize) + '.');
   };
-  maxFiles?: number;
-  maxFilesErrorCallback: Function = (files) => {
+  private maxFiles?: number;
+  private maxFilesErrorCallback: Function = (files) => {
     var maxFiles = this.maxFiles;
     alert('Please upload no more than ' + maxFiles + ' file' + (maxFiles === 1 ? '' : 's') + ' at a time.');
   };
-  minFileSize: number = 1;
-  minFileSizeErrorCallback: Function = (file) => {
+  private minFileSize: number = 1;
+  private minFileSizeErrorCallback: Function = (file) => {
     alert(file.fileName || file.name + ' is too small, please upload files larger than ' +
       Helpers.formatSize(this.minFileSize) + '.');
   };
-  prioritizeFirstAndLastChunk: boolean = false;
-  fileValidationErrorCallback: Function = (file) => {};
-  simultaneousUploads: number = 3;
+  private prioritizeFirstAndLastChunk: boolean = false;
+  private fileValidationErrorCallback: Function = (file) => {};
+  private simultaneousUploads: number = 3;
 
   constructor(options: ResumableConfiguration = {}) {
     super();
@@ -94,7 +93,7 @@ export class Resumable extends ResumableEventHandler {
   /**
    * Assign the attributes of this instance via destructuring of the options object.
    */
-  protected setInstanceProperties(options: ResumableConfiguration) {
+  private setInstanceProperties(options: ResumableConfiguration) {
     Object.assign(this, options);
 
     // Explicitly test for null because other falsy values could be used as default.
@@ -412,7 +411,7 @@ export class Resumable extends ResumableEventHandler {
     // Add the unique identifier for every new file.
     // Since this might return a promise, we have to wait until it completed.
     const filesWithUniqueIdentifiers = await Promise.all(fileList.map(async (file: ExtendedFile): Promise<ExtendedFile> => {
-      file.uniqueIdentifier = await this.generateUniqueIdentifier(file, event, fileCategory);
+      file.uniqueIdentifier = await this.callGenerateUniqueIdentifier(file, event, fileCategory);
       return file;
     }));
 
@@ -455,9 +454,9 @@ export class Resumable extends ResumableEventHandler {
    * @param event The event with which the file was provided originally
    * @param fileCategory The file category that has been provided for the file. Defaults to `defaultFileCategory`.
    */
-  private generateUniqueIdentifier(file: File, event: Event, fileCategory: string = this.defaultFileCategory): string {
-    return typeof this._generateUniqueIdentifier === 'function' ?
-      this._generateUniqueIdentifier(file, event, fileCategory) : Helpers.generateUniqueIdentifier(file);
+  private callGenerateUniqueIdentifier(file: File, event: Event, fileCategory: string = this.defaultFileCategory): string {
+    return typeof this.generateUniqueIdentifier === 'function' ?
+      this.generateUniqueIdentifier(file, event, fileCategory) : Helpers.generateUniqueIdentifier(file);
   }
 
   /**

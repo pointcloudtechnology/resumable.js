@@ -6,8 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### BREAKING
-
-
+* (#25) Many class properties and some functions are `private` now and can't be accessed from the outside anymore. While these are technically breaking changes, there shouldn't have been any use cases for using those properties/functions.  
+This **does not affect any of the options you can provide to the Resumable constructor**. Those did not change.  
+All usable (not private) functions/properties are documented in the readme.
+  The following class properties/functions are affected:
+  * `Resumable` main class:
+    * Properties that are not readable and not writable anymore:  
+    `clearInput`, `dragOverClass`, `fileCategories`, `defaultFileCategory`, `fileTypes`, `fileTypeErrorCallback`, `_generateUniqueIdentifier`, `maxFileSize`, `maxFileSizeErrorCallback`, `maxFiles`, `maxFilesErrorCallback`, `minFileSize`, `minFileSizeErrorCallback`, `prioritizeFirstAndLastChunk`, `fileValidationErrorCallback`, `simultaneousUploads`
+    * Functions that can't be called from the outside anymore:  
+      `checkUploadComplete()`
+  * `ResumableFile` class:
+    * Properties that are not writable anymore, **but can still be read**:  
+      `file`, `fileName`, `size`, `relativePath`, `uniqueIdentifier`, `fileCategory`, `chunks`
+    * Functions that can't be called from the outside anymore:  
+      `bootstrap()`
+  * `ResumableChunk` class:
+    * Properties that are not readable and not writable anymore:  
+      `chunkNumberParameterName`, `chunkSizeParameterName`, `currentChunkSizeParameterName`, `totalSizeParameterName`, `typeParameterName`, `identifierParameterName`, `fileCategoryParameterName`, `fileNameParameterName`, `relativePathParameterName`, `totalChunksParameterName`, `throttleProgressCallbacks`, `query`, `headers`, `method`, `uploadMethod`, `testMethod`, `parameterNamespace`, `testChunks`, `maxChunkRetries`, `chunkRetryInterval`, `permanentErrors`, `withCredentials`, `xhrTimeout`, `chunkFormat`, `setChunkTypeFromFile`, `target`, `testTarget`
+    * Functions that can't be called from the outside anymore:  
+      `setCustomHeaders()`, `test()`
 ### Added
 
 
@@ -17,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * Let all events from files and chunks bubble up and make them accessible for users (#20)
 * Update readme (#24)
+* Make class properties and some functions private and add getters for some of the properties (see breaking changes) (#25)
 
 ### Removed
 

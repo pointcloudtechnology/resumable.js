@@ -163,8 +163,8 @@ adding the file. (Default: `null`)
 * `dragOverClass` The class name to add on drag over an assigned drop zone. (Default: `dragover`)
 * `clearInput` Whether the value of the HTML element that received the file input event should be cleared after adding new files. This is done for elements added via `assignBrowse` and also for elements that received the event given to `handleChangeEvent`. (Default: `true`).
 
-#### Properties
-* `.isUploading` *[readonly]* Is `true` when the instance is uploading (as long as at least one chunk of any file is currently uploading). `false` otherwise.
+#### Properties (readonly)
+* `.isUploading` Is `true` when the instance is uploading (as long as at least one chunk of any file is currently uploading). `false` otherwise.
 
 #### Methods
 
@@ -204,7 +204,7 @@ See the note above about using an HTML span instead of an actual button.
 * `.getSize()` Returns the total size of the upload in bytes.
 
 ### ResumableFile
-#### Properties
+#### Properties (readonly)
 
 * `.file` The corresponding HTML5 `File` object.
 * `.fileName` The name of the file.
@@ -213,8 +213,8 @@ See the note above about using an HTML span instead of an actual button.
 * `.fileCategory` The file category this file belongs to.
 * `.uniqueIdentifier` A unique identifier assigned to this file object. This value is included in uploads to the server for reference, but can also be used in CSS classes etc when building your upload UI.
 * `.chunks` An array of `ResumableChunk` items. You shouldn't need to dig into these.
-* `.isUploading` *[readonly]* A boolean indicating whether file chunks is uploading.
-* `.isComplete` *[readonly]* A boolean indicating whether the file has completed uploading and received a server response.
+* `.isUploading` A boolean indicating whether file chunks are uploading.
+* `.isComplete` A boolean indicating whether the file has completed uploading and received a server response.
 
 #### Methods
 
@@ -227,9 +227,9 @@ See the note above about using an HTML span instead of an actual button.
 ### ResumableChunk
 You should generally not need to mess around with the single chunks of a file. Usually working with the main `Resumable` object and sometimes with the `ResumableFile`s is enough. So use the following properties and functions with care!
 
-#### Properties
-* `.formattedQuery` *[readonly]* The query parameters for this chunk as an object, combined with custom parameters if provided.
-* `.status` *[readonly]* The status for this Chunk based on different parameters of the underlying [XMLHttpRequest](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest).
+#### Properties (readonly)
+* `.formattedQuery` The query parameters for this chunk as an object, combined with custom parameters if provided.
+* `.status` The status for this Chunk based on different parameters of the underlying [XMLHttpRequest](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest).
 
 #### Methods
 

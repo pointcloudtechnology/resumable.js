@@ -162,6 +162,14 @@ adding the file. (Default: `null`)
 * `setChunkTypeFromFile` Set chunk content-type from original file.type. (Default: `false`, if `false` default Content-Type: `application/octet-stream`)
 * `dragOverClass` The class name to add on drag over an assigned drop zone. (Default: `dragover`)
 * `clearInput` Whether the value of the HTML element that received the file input event should be cleared after adding new files. This is done for elements added via `assignBrowse` and also for elements that received the event given to `handleChangeEvent`. (Default: `true`).
+* `debugVerbosityLevel` The level of verbosity that resumable will use for logging debug messages.  
+  You can either pass a `DebugVerbosityLevel` (available from the resumable types) or the corresponding number.
+  The available levels are:  
+  - `DebugVerbosityLevel.NONE (0)` No debug output
+  - `DebugVerbosityLevel.LOW (1)` Only main steps are logged (e.g. upload of a chunk is started/finished)
+  - `DebugVerbosityLevel.HIGH (2)` Additional logging between main steps is done (e.g. XMLHttpRequest for chunk upload created)
+
+  Default is `DebugVerbosityLevel.NONE` (no debug logging at all).
 
 #### Properties (readonly)
 * `.isUploading` Is `true` when the instance is uploading (as long as at least one chunk of any file is currently uploading). `false` otherwise.

@@ -109,6 +109,26 @@ class ResumableHelpers {
             target = target + separator + joinedParams;
         return target;
     }
+    /**
+     * If given debugVerbosityLevel is LOW or higher, print message to debug log.
+     * Optional any number of arguments can be provided. They will be passed directly as additional arguments to the
+     * console call.
+     */
+    static printDebugLow(debugVerbosityLevel, message, ...args) {
+        if (debugVerbosityLevel === 1 /* DebugVerbosityLevel.LOW */ || debugVerbosityLevel === 2 /* DebugVerbosityLevel.HIGH */) {
+            console.debug(message, ...args);
+        }
+    }
+    /**
+     * If given debugVerbosityLevel is HIGH, print message to debug log.
+     * Optional any number of arguments can be provided. They will be passed directly as additional arguments to the
+     * console call.
+     */
+    static printDebugHigh(debugVerbosityLevel, message, ...args) {
+        if (debugVerbosityLevel === 2 /* DebugVerbosityLevel.HIGH */) {
+            console.debug(message, ...args);
+        }
+    }
 }
 exports["default"] = ResumableHelpers;
 

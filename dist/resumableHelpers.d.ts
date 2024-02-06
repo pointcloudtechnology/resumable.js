@@ -1,4 +1,4 @@
-import { ExtendedFile } from "./types/types";
+import { DebugVerbosityLevel, ExtendedFile } from "./types/types";
 export default class ResumableHelpers {
     /**
      * Stop the propagation and default behavior of the given event `e`.
@@ -28,4 +28,16 @@ export default class ResumableHelpers {
      * Get the target url for the specified request type and params
      */
     static getTarget(requestType: string, sendTarget: string, testTarget: string, params: object, parameterNamespace?: string): string;
+    /**
+     * If given debugVerbosityLevel is LOW or higher, print message to debug log.
+     * Optional any number of arguments can be provided. They will be passed directly as additional arguments to the
+     * console call.
+     */
+    static printDebugLow(debugVerbosityLevel: DebugVerbosityLevel, message: string, ...args: any[]): void;
+    /**
+     * If given debugVerbosityLevel is HIGH, print message to debug log.
+     * Optional any number of arguments can be provided. They will be passed directly as additional arguments to the
+     * console call.
+     */
+    static printDebugHigh(debugVerbosityLevel: DebugVerbosityLevel, message: string, ...args: any[]): void;
 }

@@ -68,7 +68,6 @@ export class Resumable extends ResumableEventHandler {
 
   constructor(options: ResumableConfiguration = {}) {
     super();
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Constructing Resumable...');
     this.setInstanceProperties(options);
     this.opts = options;
     this.checkSupport();
@@ -98,7 +97,6 @@ export class Resumable extends ResumableEventHandler {
    * Assign the attributes of this instance via destructuring of the options object.
    */
   private setInstanceProperties(options: ResumableConfiguration) {
-    Helpers.printDebugHigh(this.debugVerbosityLevel, 'Setting Resumable instance properties...');
     Object.assign(this, options);
 
     // Explicitly test for null because other falsy values could be used as default.

@@ -40,7 +40,6 @@ export default class ResumableFile extends ResumableEventHandler {
 
   constructor(file: File, uniqueIdentifier: string, fileCategory: string, options: object) {
     super();
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Constructing ResumableFile...');
     this.opts = options;
     this.setInstanceProperties(options);
     this._file = file;
@@ -61,7 +60,6 @@ export default class ResumableFile extends ResumableEventHandler {
    * Set the options provided inside the configuration object on this instance
    */
   private setInstanceProperties(options: ResumableConfiguration) {
-    Helpers.printDebugHigh(this.debugVerbosityLevel, 'Setting ResumableFile instance properties...');
     Object.assign(this, options);
     Helpers.printDebugHigh(this.debugVerbosityLevel, 'Set ResumableFile instance properties.', this);
   }

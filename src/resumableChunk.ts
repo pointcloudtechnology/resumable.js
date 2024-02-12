@@ -71,7 +71,6 @@ export default class ResumableChunk extends ResumableEventHandler {
 
   constructor(fileObj: ResumableFile, offset: number, options: ResumableConfiguration) {
     super();
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Constructing ResumableChunk...');
     this.setInstanceProperties(options);
     this.fileObj = fileObj;
     this.fileObjSize = fileObj.size;
@@ -89,7 +88,6 @@ export default class ResumableChunk extends ResumableEventHandler {
    * Set the options provided inside the configuration object on this instance
    */
   private setInstanceProperties(options: ResumableConfiguration): void {
-    Helpers.printDebugHigh(this.debugVerbosityLevel, 'Setting ResumableChunk instance properties...');
     Object.assign(this, options);
     Helpers.printDebugHigh(this.debugVerbosityLevel, 'Set ResumableChunk instance properties.', this);
   }

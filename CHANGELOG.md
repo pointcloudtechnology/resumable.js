@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### BREAKING
+
+### Added
+
+### Fixed
+
+### Changed
+
+### Removed
+
+## [3.0.0]
+### BREAKING
 * (#25) Many class properties and some functions are `private` now and can't be accessed from the outside anymore. While these are technically breaking changes, there shouldn't have been any use cases for using those properties/functions.  
 This **does not affect any of the options you can provide to the Resumable constructor**. Those did not change.  
 All usable (not private) functions/properties are documented in the readme.
@@ -28,17 +39,10 @@ All usable (not private) functions/properties are documented in the readme.
 ### Added
 * Add optional verbose logging (#27)
 
-### Fixed
-
-
 ### Changed
 * Let all events from files and chunks bubble up and make them accessible for users (#20)
 * Update readme (#24)
 * Make class properties and some functions private and add getters for some of the properties (see breaking changes) (#25)
-
-### Removed
-
-
 
 ## [2.1.0] - 2023-03-21
 ### Added

@@ -47,6 +47,7 @@ export default class ResumableChunk extends ResumableEventHandler {
     private setChunkTypeFromFile;
     private target;
     private testTarget;
+    private debugVerbosityLevel;
     constructor(fileObj: ResumableFile, offset: number, options: ResumableConfiguration);
     /**
      * Set the options provided inside the configuration object on this instance

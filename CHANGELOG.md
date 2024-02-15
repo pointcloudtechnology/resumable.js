@@ -26,7 +26,7 @@ All usable (not private) functions/properties are documented in the readme.
     * Functions that can't be called from the outside anymore:  
       `setCustomHeaders()`, `test()`
 ### Added
-
+* Add optional verbose logging (#27)
 
 ### Fixed
 

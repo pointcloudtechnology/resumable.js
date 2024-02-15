@@ -85,9 +85,11 @@ class Resumable extends resumableEventHandler_1.default {
         this.prioritizeFirstAndLastChunk = false;
         this.fileValidationErrorCallback = (file) => { };
         this.simultaneousUploads = 3;
+        this.debugVerbosityLevel = 0 /* DebugVerbosityLevel.NONE */;
         this.setInstanceProperties(options);
         this.opts = options;
         this.checkSupport();
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Constructed Resumable.', this);
     }
     /**
      * Check whether the current browser supports the essential functions for the package to work.
@@ -156,12 +158,15 @@ class Resumable extends resumableEventHandler_1.default {
             });
         }
         this.sanitizeFileTypes();
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Set Resumable instance properties.', this);
     }
     sanitizeFileTypes() {
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Sanitizing file types...');
         // For good behaviour we do some sanitizing. Remove spaces and dots and lowercase all.
         Object.keys(this.fileTypes).forEach((fileCategory) => {
             this.fileTypes[fileCategory] = this.fileTypes[fileCategory].map((type) => type.replace(/[\s.]/g, '').toLowerCase());
         });
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Sanitized file types.');
     }
     throwIfUnknownFileCategory(fileCategory) {
         if (!this.fileCategories.includes(fileCategory)) {
@@ -176,17 +181,21 @@ class Resumable extends resumableEventHandler_1.default {
      */
     mapDirectoryItemToFile(item, path) {
         return __awaiter(this, void 0, void 0, function* () {
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Mapping directory item to file (' + path + ')...', item);
             if (item.isFile) {
                 // file entry provided
                 const file = yield new Promise((resolve, reject) => item.file(resolve, reject));
                 file.relativePath = path + file.name;
+                resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Mapped directory item (FileSystemFileEntry) to file (' + path + ').', file);
                 return [file];
             }
             else if (item.isDirectory) {
                 // directory entry provided
+                resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Directory item contains new directory (' + path + ').');
                 return yield this.processDirectory(item, path + item.name + '/');
             }
             else if (item instanceof File) {
+                resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Directory item already is a file (' + path + ').');
                 return [item];
             }
             console.warn('Item mapping did not return a file object. This might be due to an unknown file type.');
@@ -201,13 +210,16 @@ class Resumable extends resumableEventHandler_1.default {
      */
     mapDragItemToFile(item, path) {
         return __awaiter(this, void 0, void 0, function* () {
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Mapping drag item to file (' + path + ')...', item);
             let entry = item.webkitGetAsEntry();
             if (entry.isDirectory) {
+                resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Drag item contains new directory (' + path + ').');
                 return yield this.processDirectory(entry, path + entry.name + '/');
             }
             let file = item.getAsFile();
             if (file instanceof File) {
                 file.relativePath = path + file.name;
+                resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Mapped drag item to file (' + path + ').', file);
                 return [file];
             }
             console.warn('Item mapping did not return a file object. This might be due to an unknown file type.');
@@ -218,6 +230,7 @@ class Resumable extends resumableEventHandler_1.default {
      * Recursively traverse a directory and collect files to upload
      */
     processDirectory(directory, path) {
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Processing directory (' + path + ')...', directory);
         return new Promise((resolve, reject) => {
             const dirReader = directory.createReader();
             let allEntries = [];
@@ -229,11 +242,13 @@ class Resumable extends resumableEventHandler_1.default {
                         return readEntries();
                     }
                     // After collecting all files, map all fileEntries to File objects
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Read all entries from directory (' + path + ').', allEntries);
                     allEntries = allEntries.map((entry) => {
                         return this.mapDirectoryItemToFile(entry, path);
                     });
                     // Wait until all files are collected.
                     resolve(yield Promise.all(allEntries));
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Processed directory (' + path + ').');
                 }), reject);
             };
             readEntries();
@@ -246,9 +261,11 @@ class Resumable extends resumableEventHandler_1.default {
      * If "onDrop()" is called from "handleDropEvent()" this is not needed.
      */
     removeDragOverClassAndCallOnDrop(e) {
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Removing drag over class and calling onDrop...', e);
         const domNode = e.currentTarget;
         domNode.classList.remove(this.dragOverClass);
         const fileCategory = domNode.getAttribute('resumable-file-category');
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Removed drag over class.');
         this.throwIfUnknownFileCategory(fileCategory);
         return this.onDrop(e, fileCategory);
     }
@@ -257,6 +274,7 @@ class Resumable extends resumableEventHandler_1.default {
      */
     onDrop(e, fileCategory = this.defaultFileCategory) {
         return __awaiter(this, void 0, void 0, function* () {
+            resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling onDrop...', e, fileCategory);
             resumableHelpers_1.default.stopEvent(e);
             let items = [];
             //handle dropped things as items if we can (this lets us deal with folders nicer in some cases)
@@ -267,6 +285,7 @@ class Resumable extends resumableEventHandler_1.default {
             else if (e.dataTransfer && e.dataTransfer.files) {
                 items = [...e.dataTransfer.files];
             }
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Collected items in onDrop.', items);
             if (!items.length) {
                 return; // nothing to do
             }
@@ -274,9 +293,11 @@ class Resumable extends resumableEventHandler_1.default {
             let promises = items.map((item) => this.mapDragItemToFile(item, ''));
             let files = resumableHelpers_1.default.flattenDeep(yield Promise.all(promises));
             if (files.length) {
+                resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handling files in onDrop...', files);
                 // at least one file found
                 this.appendFilesFromFileList(files, e, fileCategory);
             }
+            resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled onDrop.');
         });
     }
     /**
@@ -311,8 +332,10 @@ class Resumable extends resumableEventHandler_1.default {
      */
     validateFiles(files, fileCategory = this.defaultFileCategory) {
         return __awaiter(this, void 0, void 0, function* () {
+            resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Validating files....', files, fileCategory);
             if (!this.fileCategories.includes(fileCategory)) {
                 this.fire('fileProcessingFailed', undefined, 'unknownFileCategory', fileCategory);
+                resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "unknownFileCategory".', fileCategory);
                 return;
             }
             // Remove files that are duplicated in the original array, based on their unique identifiers
@@ -322,6 +345,7 @@ class Resumable extends resumableEventHandler_1.default {
                 // Check if the file has already been added (based on its unique identifier).
                 if (resumableFiles.some((addedFile) => addedFile.uniqueIdentifier === file.uniqueIdentifier)) {
                     this.fire('fileProcessingFailed', file, 'duplicate', fileCategory);
+                    resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "duplicate".', file);
                     return false;
                 }
                 let fileType = file.type.toLowerCase();
@@ -338,6 +362,7 @@ class Resumable extends resumableEventHandler_1.default {
                     if (!fileTypeFound) {
                         this.fire('fileProcessingFailed', file, 'fileType', fileCategory);
                         this.fileTypeErrorCallback(file);
+                        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "fileType".', file);
                         return false;
                     }
                 }
@@ -345,6 +370,7 @@ class Resumable extends resumableEventHandler_1.default {
                 if (this.minFileSize !== undefined && file.size < this.minFileSize) {
                     this.fire('fileProcessingFailed', file, 'minFileSize', fileCategory);
                     this.minFileSizeErrorCallback(file);
+                    resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "minFileSize".', file);
                     return false;
                 }
                 if (this.maxFileSize !== undefined && file.size > this.maxFileSize) {
@@ -356,11 +382,13 @@ class Resumable extends resumableEventHandler_1.default {
                 if (fileExtension in this.validators && !(yield this.validators[fileExtension](file, fileCategory))) {
                     this.fire('fileProcessingFailed', file, 'validation', fileCategory);
                     this.fileValidationErrorCallback(file);
+                    resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "validation".', file);
                     return false;
                 }
                 return true;
             }));
             const results = yield Promise.all(validationPromises);
+            resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Successfully validated files.', results);
             // Only include files that passed their validation tests
             return files.filter((_v, index) => results[index]);
         });
@@ -374,9 +402,11 @@ class Resumable extends resumableEventHandler_1.default {
      */
     appendFilesFromFileList(fileList, event, fileCategory = this.defaultFileCategory) {
         return __awaiter(this, void 0, void 0, function* () {
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Appending files from list...', fileList, event, fileCategory);
             const resumableFiles = this.files[fileCategory];
             if (!resumableFiles) {
                 this.fire('fileProcessingFailed', undefined, 'unknownFileCategory', fileCategory);
+                resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Can\'t append files from list, because of "unknownFileCategory"', fileCategory);
                 return false;
             }
             const allResumableFiles = this.getFilesOfAllCategories();
@@ -384,11 +414,13 @@ class Resumable extends resumableEventHandler_1.default {
             if (this.maxFiles !== undefined && this.maxFiles < fileList.length + allResumableFiles.length) {
                 // if single-file upload, file is already added, and trying to add 1 new file, simply replace the already-added file
                 if (this.maxFiles === 1 && allResumableFiles.length === 1 && fileList.length === 1) {
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Replacing already added file, because of single-file upload.');
                     this.removeFile(resumableFiles[0]);
                 }
                 else {
                     this.fire('fileProcessingFailed', undefined, 'maxFiles', fileCategory);
                     this.maxFilesErrorCallback(fileList);
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Can\'t append files from list, because of "maxFiles"', { maxFiles: this.maxFiles, alreadyAddedFilesCount: allResumableFiles.length, newFilesCount: fileList.length });
                     return false;
                 }
             }
@@ -401,6 +433,7 @@ class Resumable extends resumableEventHandler_1.default {
             // Validate the files and remove duplicates
             const validatedFiles = yield this.validateFiles(filesWithUniqueIdentifiers, fileCategory);
             let skippedFiles = filesWithUniqueIdentifiers.filter((file) => !validatedFiles.includes(file));
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Creating ResumableFiles for every file from file list...');
             for (const file of validatedFiles) {
                 let f = new resumableFile_1.default(file, file.uniqueIdentifier, fileCategory, this.opts);
                 f.on('chunkingStart', (...args) => this.handleChunkingStart(args, fileCategory));
@@ -418,13 +451,16 @@ class Resumable extends resumableEventHandler_1.default {
                 f.on('fileRetry', (...args) => this.handleFileRetry(args, fileCategory));
                 this.files[fileCategory].push(f);
                 this.fire('fileAdded', f, event, fileCategory);
+                resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Created ResumableFile.', file, f);
             }
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Created ResumableFiles for every file from file list.');
             // all files processed, trigger event
             if (!validatedFiles.length && !skippedFiles.length) {
                 // no succeeded files, just skip
                 return;
             }
             this.fire('filesAdded', validatedFiles, skippedFiles, fileCategory);
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Appended all files from list.');
         });
     }
     /**
@@ -435,7 +471,6 @@ class Resumable extends resumableEventHandler_1.default {
      * @param fileCategory The file category that has been provided for the file. Defaults to `defaultFileCategory`.
      */
     callGenerateUniqueIdentifier(file, event, fileCategory = this.defaultFileCategory) {
-        console.log('aaa');
         return typeof this.generateUniqueIdentifier === 'function' ?
             this.generateUniqueIdentifier(file, event, fileCategory) : resumableHelpers_1.default.generateUniqueIdentifier(file);
     }
@@ -443,6 +478,7 @@ class Resumable extends resumableEventHandler_1.default {
      * Queue a new chunk to be uploaded that is currently awaiting upload.
      */
     uploadNextChunk() {
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Queueing next chunk upload...');
         const allResumableFiles = this.getFilesOfAllCategories();
         // In some cases (such as videos) it's really handy to upload the first
         // and last chunk of a file quickly; this lets the server check the file's
@@ -451,18 +487,22 @@ class Resumable extends resumableEventHandler_1.default {
             for (const file of allResumableFiles) {
                 if (file.chunks.length && file.chunks[0].status === "chunkPending" /* ResumableChunkStatus.PENDING */) {
                     file.chunks[0].send();
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Queued upload of prioritized first chunk.', file);
                     return;
                 }
                 if (file.chunks.length > 1 && file.chunks[file.chunks.length - 1].status === "chunkPending" /* ResumableChunkStatus.PENDING */) {
                     file.chunks[file.chunks.length - 1].send();
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Queued upload of prioritized last chunk.', file);
                     return;
                 }
             }
         }
         // Now, simply look for the next best thing to upload
         for (const file of allResumableFiles) {
-            if (file.upload())
+            if (file.upload()) {
+                resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Queued upload of next chunk.', file);
                 return;
+            }
         }
     }
     /**
@@ -491,6 +531,7 @@ class Resumable extends resumableEventHandler_1.default {
      * @param fileCategory The file category that will be assigned to all added files. Defaults to `defaultFileCategory`.
      */
     assignBrowse(domNodes, isDirectory = false, fileCategory = this.defaultFileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Assigning browse to DOM nodes...', domNodes, { isDirectory: isDirectory }, fileCategory);
         this.throwIfUnknownFileCategory(fileCategory);
         if (domNodes instanceof HTMLElement)
             domNodes = [domNodes];
@@ -530,7 +571,9 @@ class Resumable extends resumableEventHandler_1.default {
             input.addEventListener('change', (event) => {
                 this.handleChangeEvent(event, fileCategory);
             }, false);
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Added input (for browse) to DOM node.', domNode, input);
         }
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Assigned browse to DOM nodes.', domNodes);
     }
     /**
      * Assign one or more DOM nodes as a drop target.
@@ -539,6 +582,7 @@ class Resumable extends resumableEventHandler_1.default {
      * @param fileCategory The file category that will be assigned to all added files. Defaults to `defaultFileCategory`.
      */
     assignDrop(domNodes, fileCategory = this.defaultFileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Assigning drop to DOM nodes...', domNodes, fileCategory);
         this.throwIfUnknownFileCategory(fileCategory);
         if (domNodes instanceof HTMLElement)
             domNodes = [domNodes];
@@ -555,11 +599,13 @@ class Resumable extends resumableEventHandler_1.default {
             domNode.addEventListener('dragleave', this.onDragLeave.bind(this), false);
             domNode.addEventListener('drop', this.removeDragOverClassAndCallOnDrop.bind(this), false);
         }
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Assigned drop to DOM nodes.', domNodes);
     }
     /**
      * Remove one or more DOM nodes as a drop target.
      */
     unAssignDrop(domNodes) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Unassigning drop from DOM nodes...', domNodes);
         if (domNodes instanceof HTMLElement)
             domNodes = [domNodes];
         for (const domNode of domNodes) {
@@ -568,6 +614,7 @@ class Resumable extends resumableEventHandler_1.default {
             domNode.removeEventListener('dragleave', this.onDragLeave.bind(this));
             domNode.removeEventListener('drop', this.removeDragOverClassAndCallOnDrop.bind(this));
         }
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Unassigned drop from DOM nodes.', domNodes);
     }
     /**
      * Set the file types allowed to upload.
@@ -579,6 +626,7 @@ class Resumable extends resumableEventHandler_1.default {
      * @param fileCategory The file category for which the file types should be updated. Defaults to `defaultFileCategory`.
      */
     setFileTypes(fileTypes, domNode = null, fileCategory = this.defaultFileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Setting file types for DOM node...', fileTypes, domNode, fileCategory);
         this.throwIfUnknownFileCategory(fileCategory);
         if (domNode && domNode.type !== 'file') {
             throw new Error('Dom node is not a file input.');
@@ -601,6 +649,7 @@ class Resumable extends resumableEventHandler_1.default {
                 domNode.removeAttribute('accept');
             }
         }
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Set file types for DOM node.');
     }
     /**
      * Check whether any files are currently uploading
@@ -612,36 +661,46 @@ class Resumable extends resumableEventHandler_1.default {
      * Start or resume the upload of the provided files by initiating the upload of the first chunk
      */
     upload() {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Starting Upload...');
         // Make sure we don't start too many uploads at once
-        if (this.isUploading)
+        if (this.isUploading) {
+            resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Already uploading. Not starting again.');
             return;
+        }
         // Kick off the queue
         this.fire('uploadStart');
         for (let num = 1; num <= this.simultaneousUploads; num++) {
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Starting simultaneous upload ' + num + ' / ' + this.simultaneousUploads + '...');
             this.uploadNextChunk();
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Started simultaneous upload ' + num + ' / ' + this.simultaneousUploads + '...');
         }
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Started Upload.');
     }
     /**
      * Pause the upload
      */
     pause() {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Pausing Upload...');
         // Resume all chunks currently being uploaded
         for (const file of this.getFilesOfAllCategories()) {
             file.abort();
         }
         this.fire('pause');
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Paused Upload.');
     }
     ;
     /**
      * Cancel uploading and reset all files to their initial states
      */
     cancel() {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Cancelling Upload...');
         this.fire('beforeCancel');
         const allFiles = this.getFilesOfAllCategories();
         allFiles.forEach((file) => {
             file.cancel();
         });
         this.fire('cancel');
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Cancelled Upload.');
     }
     ;
     /**
@@ -657,16 +716,20 @@ class Resumable extends resumableEventHandler_1.default {
      * Add a HTML5 File object to the list of files.
      */
     addFile(file, event, fileCategory = this.defaultFileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Adding file...', file, event, fileCategory);
         this.throwIfUnknownFileCategory(fileCategory);
         this.appendFilesFromFileList([file], event, fileCategory);
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Added file.', file);
     }
     ;
     /**
      * Add a list of HTML5 File objects to the list of files.
      */
     addFiles(files, event, fileCategory = this.defaultFileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Adding files...', files, event, fileCategory);
         this.throwIfUnknownFileCategory(fileCategory);
         this.appendFilesFromFileList(files, event, fileCategory);
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Added files.', files);
     }
     ;
     /**
@@ -676,20 +739,24 @@ class Resumable extends resumableEventHandler_1.default {
      * @param validator A callback function that should be called when validating files with the given type
      */
     addFileValidator(fileType, validator) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Adding file validator for file type...', fileType);
         if (fileType in this.validators) {
             console.warn(`Overwriting validator for file type: ${fileType}`);
         }
         this.validators[fileType] = validator;
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Added file validator for file type.', fileType);
     }
     /**
      * Remove the given resumable file from the file list (of its corresponding file category).
      */
     removeFile(file) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Removing file...', file);
         const fileCategory = file.fileCategory;
         const fileIndex = this.files[fileCategory].findIndex((fileFromArray) => fileFromArray.uniqueIdentifier === file.uniqueIdentifier);
         if (fileIndex >= 0) {
             this.files[fileCategory].splice(fileIndex, 1);
         }
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Removed file.', file);
     }
     ;
     /**
@@ -709,13 +776,16 @@ class Resumable extends resumableEventHandler_1.default {
      * Call the event handler for a DragEvent (when a file is dropped on a drop area).
      */
     handleDropEvent(e, fileCategory = this.defaultFileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling drop event...', e, fileCategory);
         this.throwIfUnknownFileCategory(fileCategory);
         this.onDrop(e, fileCategory);
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled drop event.');
     }
     /**
      * Call the event handler for an InputEvent (i.e. received one or multiple files).
      */
     handleChangeEvent(e, fileCategory = this.defaultFileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling change event...', e, fileCategory);
         this.throwIfUnknownFileCategory(fileCategory);
         const eventTarget = e.target;
         this.fire('fileProcessingBegin', eventTarget.files, fileCategory);
@@ -723,12 +793,14 @@ class Resumable extends resumableEventHandler_1.default {
         if (this.clearInput) {
             eventTarget.value = '';
         }
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled change event.');
     }
     /**
      * Check whether the upload is completed (if all files of a category are uploaded and if all files in general are
      * uploaded).
      */
     checkUploadComplete() {
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Checking for upload completion...');
         // If no files were added, there is no upload that could be complete.
         if (this.getFilesOfAllCategories().length === 0) {
             return;
@@ -751,6 +823,7 @@ class Resumable extends resumableEventHandler_1.default {
             // All chunks have been uploaded, complete
             this.fire('complete');
         }
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Checked for upload completion. Upload completed: ' + (this.uncompletedFileCategories.length ? 'no' : 'yes'));
     }
     /**
      * Event Handlers: This section should only include methods that are used to
@@ -760,74 +833,93 @@ class Resumable extends resumableEventHandler_1.default {
      * The event handler when the chunking of a file was started
      */
     handleChunkingStart(args, fileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkingStart" in main resumable object...', args);
         this.fire('chunkingStart', ...args, fileCategory);
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkingStart" in main resumable object.', args);
     }
     /**
      * The event handler when there was any progress while chunking a file
      */
     handleChunkingProgress(args, fileCategory) {
+        // No debugging messages because this would really spam the console.
         this.fire('chunkingProgress', ...args, fileCategory);
     }
     /**
      * The event handler when the chunking of a file was completed
      */
     handleChunkingComplete(args, fileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkingComplete" in main resumable object...', args);
         this.fire('chunkingComplete', ...args, fileCategory);
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkingComplete" in main resumable object.', args);
     }
     /**
      * The event handler when a chunk was uploaded successfully
      */
     handleChunkSuccess(args, fileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkSuccess" in main resumable object...', args);
         this.fire('chunkSuccess', ...args, fileCategory);
         this.uploadNextChunk();
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkSuccess" in main resumable object.', args);
     }
     /**
      * The event handler when an error happened while uploading a chunk
      */
     handleChunkError(args, fileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkError" in main resumable object...', args);
         this.fire('chunkError', ...args, fileCategory);
         this.uploadNextChunk();
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkError" in main resumable object.', args);
     }
     /**
      * The event handler when an the upload of a chunk was canceled
      */
     handleChunkCancel(args, fileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkCancel" in main resumable object...', args);
         this.fire('chunkCancel', ...args, fileCategory);
         this.uploadNextChunk();
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkCancel" in main resumable object.', args);
     }
     /**
      * The event handler when the upload of a chunk is being retried
      */
     handleChunkRetry(args, fileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkRetry" in main resumable object...', args);
         this.fire('chunkRetry', ...args, fileCategory);
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkRetry" in main resumable object.', args);
     }
     /**
      * The event handler when there is any progress while uploading a chunk
      */
     handleChunkProgress(args, fileCategory) {
+        // No debugging messages because this would really spam the console.
         this.fire('chunkProgress', ...args, fileCategory);
     }
     /**
      * The event handler when an error occurred during the upload of a file
      */
     handleFileError(args, fileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling "fileError" in main resumable object...', args);
         this.fire('fileError', ...args, fileCategory);
         // 'error' event for backward compatibility ('fileError' was not fired in previous versions).
         // If there will be other errors besides 'fileError's at some point, the 'error' event (as a general "catch all
         // errors" event) would make more sense.
         this.fire('error', args[1], args[0], fileCategory);
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled "fileError" in main resumable object.', args);
     }
     /**
      * The event handler when all chunks from a file were uploaded successfully
      */
     handleFileSuccess(args, fileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling "fileSuccess" in main resumable object...', args);
         this.fire('fileSuccess', ...args, fileCategory);
         this.checkUploadComplete();
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled "fileSuccess" in main resumable object.', args);
     }
     /**
      * The event handler when a file progress event was received
      */
     handleFileProgress(args, fileCategory) {
+        // No debugging messages because this would really spam the console.
         this.fire('fileProgress', ...args, fileCategory);
         this.fire('progress');
     }
@@ -835,15 +927,19 @@ class Resumable extends resumableEventHandler_1.default {
      * The event handler when the upload of a file was canceled
      */
     handleFileCancel(args, fileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling "fileCancel" in main resumable object...', args);
         this.fire('fileCancel', ...args, fileCategory);
         this.removeFile(args[0]);
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled "fileCancel" in main resumable object.', args);
     }
     /**
      * The event handler, when the retry of a file was initiated
      */
     handleFileRetry(args, fileCategory) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handling "fileRetry" in main resumable object...', args);
         this.fire('fileRetry', ...args, fileCategory);
         this.upload();
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Handled "fileRetry" in main resumable object.', args);
     }
 }
 exports.Resumable = Resumable;
@@ -948,6 +1044,26 @@ class ResumableHelpers {
             target = target + separator + joinedParams;
         return target;
     }
+    /**
+     * If given debugVerbosityLevel is LOW or higher, print message to debug log.
+     * Optional any number of arguments can be provided. They will be passed directly as additional arguments to the
+     * console call.
+     */
+    static printDebugLow(debugVerbosityLevel, message, ...args) {
+        if (debugVerbosityLevel === 1 /* DebugVerbosityLevel.LOW */ || debugVerbosityLevel === 2 /* DebugVerbosityLevel.HIGH */) {
+            console.debug(message, ...args);
+        }
+    }
+    /**
+     * If given debugVerbosityLevel is HIGH, print message to debug log.
+     * Optional any number of arguments can be provided. They will be passed directly as additional arguments to the
+     * console call.
+     */
+    static printDebugHigh(debugVerbosityLevel, message, ...args) {
+        if (debugVerbosityLevel === 2 /* DebugVerbosityLevel.HIGH */) {
+            console.debug(message, ...args);
+        }
+    }
 }
 exports["default"] = ResumableHelpers;
 
@@ -973,6 +1089,7 @@ exports["default"] = ResumableHelpers;
 */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const resumableChunk_1 = __webpack_require__(3);
+const resumableHelpers_1 = __webpack_require__(1);
 const resumableEventHandler_1 = __webpack_require__(4);
 /**
  * A single file object that should be uploaded in multiple chunks
@@ -984,6 +1101,7 @@ class ResumableFile extends resumableEventHandler_1.default {
         this.isPaused = false;
         this._chunks = [];
         this.chunkSize = 1024 * 1024; // 1 MB
+        this.debugVerbosityLevel = 0 /* DebugVerbosityLevel.NONE */;
         this.opts = options;
         this.setInstanceProperties(options);
         this._file = file;
@@ -996,12 +1114,14 @@ class ResumableFile extends resumableEventHandler_1.default {
         // Bootstrap file
         this.fire('chunkingStart', this);
         this.bootstrap();
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Constructed ResumableFile.', this);
     }
     /**
      * Set the options provided inside the configuration object on this instance
      */
     setInstanceProperties(options) {
         Object.assign(this, options);
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Set ResumableFile instance properties.', this);
     }
     get file() {
         return this._file;
@@ -1028,6 +1148,7 @@ class ResumableFile extends resumableEventHandler_1.default {
      * Stop current uploads for this file
      */
     abort() {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Aborting upload of ResumableFile...', this);
         let abortCount = 0;
         for (const chunk of this._chunks) {
             if (chunk.status === "chunkUploading" /* ResumableChunkStatus.UPLOADING */) {
@@ -1037,11 +1158,13 @@ class ResumableFile extends resumableEventHandler_1.default {
         }
         if (abortCount > 0)
             this.fire('fileProgress', this, null);
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Aborted upload of ResumableFile.', this);
     }
     /**
      * Cancel uploading this file and remove it from the file list
      */
     cancel() {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Cancelling upload of ResumableFile...', this);
         for (const chunk of this._chunks) {
             if (chunk.status === "chunkUploading" /* ResumableChunkStatus.UPLOADING */) {
                 chunk.abort();
@@ -1052,11 +1175,13 @@ class ResumableFile extends resumableEventHandler_1.default {
         this._chunks = [];
         this.fire('fileCancel', this);
         this.fire('fileProgress', this, null);
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Cancelled upload of ResumableFile.', this);
     }
     /**
      * Retry uploading this file
      */
     retry() {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Retrying upload of ResumableFile...', this);
         this.bootstrap();
         let firedRetry = false;
         this.on('chunkingComplete', () => {
@@ -1064,20 +1189,26 @@ class ResumableFile extends resumableEventHandler_1.default {
                 this.fire('fileRetry', this, null);
             firedRetry = true;
         });
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Retried upload of ResumableFile.', this);
     }
     /**
      * Prepare this file for a new upload, by dividing it into multiple chunks
      */
     bootstrap() {
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Bootstrapping and chunking ResumableFile...', this);
         const progressHandler = (message, chunk) => {
+            // No debugging messages because this would really spam the console.
             this.fire('chunkProgress', chunk, message);
             this.fire('fileProgress', this, message);
         };
         const retryHandler = (message, chunk) => {
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkRetry" in ResumableFile...', this, chunk, message);
             this.fire('chunkRetry', chunk, message);
             this.fire('fileRetry', this, message);
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkRetry" in ResumableFile.', this, chunk, message);
         };
         const successHandler = (message, chunk) => {
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkSuccess" in ResumableFile...', this, chunk, message);
             if (this._error)
                 return;
             this.fire('chunkSuccess', chunk, message);
@@ -1085,13 +1216,16 @@ class ResumableFile extends resumableEventHandler_1.default {
             if (this.isComplete) {
                 this.fire('fileSuccess', this, message);
             }
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkSuccess" in ResumableFile.', this, chunk, message);
         };
         const errorHandler = (message, chunk) => {
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkError" in ResumableFile...', this, chunk, message);
             this.fire('chunkError', chunk, message);
             this.abort();
             this._error = true;
             this._chunks = [];
             this.fire('fileError', this, message);
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkError" in ResumableFile.', this, chunk, message);
         };
         this.abort();
         this._error = false;
@@ -1109,6 +1243,7 @@ class ResumableFile extends resumableEventHandler_1.default {
             this.fire('chunkingProgress', this, offset / maxOffset);
         }
         this.fire('chunkingComplete', this);
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Bootstrapped and chunked ResumableFile.', this);
     }
     /**
      * Get the progress for uploading this file based on the progress of the individual file chunks
@@ -1146,15 +1281,18 @@ class ResumableFile extends resumableEventHandler_1.default {
      * Initiate the upload of a new chunk for this file. This function returns whether a new upload was started or not.
      */
     upload() {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Starting upload of next chunk of ResumableFile...', this);
         if (this.isPaused) {
             return false;
         }
         for (const chunk of this._chunks) {
             if (chunk.status === "chunkPending" /* ResumableChunkStatus.PENDING */) {
                 chunk.send();
+                resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Started upload of next chunk of ResumableFile.', this);
                 return true;
             }
         }
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'No chunk found to upload for ResumableFile.', this);
         return false;
     }
     /**
@@ -1162,12 +1300,14 @@ class ResumableFile extends resumableEventHandler_1.default {
      * @param chunkNumber The index until which all chunks should be marked as completed
      */
     markChunksCompleted(chunkNumber) {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Marking ' + chunkNumber + ' chunks as complete for ResumableFile...', this);
         if (!this._chunks || this._chunks.length <= chunkNumber) {
             return;
         }
         for (let num = 0; num < chunkNumber; num++) {
             this._chunks[num].markComplete();
         }
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Marked ' + chunkNumber + ' chunks as complete for ResumableFile.', this);
     }
 }
 exports["default"] = ResumableFile;
@@ -1238,6 +1378,7 @@ class ResumableChunk extends resumableEventHandler_1.default {
         this.setChunkTypeFromFile = false;
         this.target = '/';
         this.testTarget = '';
+        this.debugVerbosityLevel = 0 /* DebugVerbosityLevel.NONE */;
         this.setInstanceProperties(options);
         this.fileObj = fileObj;
         this.fileObjSize = fileObj.size;
@@ -1247,18 +1388,22 @@ class ResumableChunk extends resumableEventHandler_1.default {
         this.startByte = this.offset * this.chunkSize;
         this.endByte = Math.min(this.fileObjSize, (this.offset + 1) * this.chunkSize);
         this.xhr = null;
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Constructed ResumableChunk.', this);
     }
     /**
      * Set the options provided inside the configuration object on this instance
      */
     setInstanceProperties(options) {
         Object.assign(this, options);
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Set ResumableChunk instance properties.', this);
     }
     /**
      * Set the header values for the current XMLHttpRequest
      */
     setCustomHeaders() {
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Setting custom headers for  XHR of ResumableChunk...', this);
         if (!this.xhr) {
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'No XHR found to set custom headers.', this);
             return;
         }
         let customHeaders = this.headers;
@@ -1270,6 +1415,7 @@ class ResumableChunk extends resumableEventHandler_1.default {
                 continue;
             this.xhr.setRequestHeader(header, customHeaders[header]);
         }
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Set custom headers for XHR of ResumableChunk.', this);
     }
     /**
      * Get query parameters for this chunk as an object, combined with custom parameters if provided
@@ -1340,9 +1486,11 @@ class ResumableChunk extends resumableEventHandler_1.default {
      * Makes a GET request without any data to see if the chunk has already been uploaded in a previous session
      */
     test() {
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Sending test request for ResumableChunk...', this);
         // Set up request and listen for event
         this.xhr = new XMLHttpRequest();
         var testHandler = () => {
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handling test request response for ResumableChunk...', this);
             this.tested = true;
             var status = this.status;
             if (status === "chunkSuccess" /* ResumableChunkStatus.SUCCESS */) {
@@ -1351,6 +1499,7 @@ class ResumableChunk extends resumableEventHandler_1.default {
             else {
                 this.send();
             }
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handled test request response for ResumableChunk.', this);
         };
         this.xhr.addEventListener('load', testHandler, false);
         this.xhr.addEventListener('error', testHandler, false);
@@ -1362,24 +1511,32 @@ class ResumableChunk extends resumableEventHandler_1.default {
         // Add data from header options
         this.setCustomHeaders();
         this.xhr.send(null);
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Sent test request for ResumableChunk.', this);
     }
     /**
      * Abort and reset a request
      */
     abort() {
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Aborting upload of ResumableChunk...', this);
         if (this.xhr)
             this.xhr.abort();
         this.xhr = null;
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Aborted upload of ResumableChunk.', this);
     }
     /**
      *  Uploads the actual data in a POST call
      */
     send() {
         if (this.testChunks && !this.tested) {
+            resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Testing upload status of ResumableChunk before uploading...', this);
             this.test();
+            resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Tested upload status of ResumableChunk before uploading. Chunk already uploaded: '
+                + (this.status === "chunkSuccess" /* ResumableChunkStatus.SUCCESS */ ? 'yes' : 'no'), this);
             return;
         }
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Starting upload of ResumableChunk...', this);
         // Set up request and listen for event
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Creating XHR for upload of ResumableChunk...', this, this.xhr);
         this.xhr = new XMLHttpRequest();
         // Progress
         this.xhr.upload.addEventListener('progress', (e) => {
@@ -1399,12 +1556,17 @@ class ResumableChunk extends resumableEventHandler_1.default {
             var status = this.status;
             switch (status) {
                 case "chunkSuccess" /* ResumableChunkStatus.SUCCESS */:
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkSuccess" in ResumableChunk...', this);
                     this.fire('chunkSuccess', this.message());
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkSuccess" in ResumableChunk.', this);
                     break;
                 case "chunkError" /* ResumableChunkStatus.ERROR */:
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkError" in ResumableChunk...', this);
                     this.fire('chunkError', this.message());
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkError" in ResumableChunk.', this);
                     break;
                 default:
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkRetry" in ResumableChunk...', this);
                     this.fire('chunkRetry', this.message());
                     this.abort();
                     this.retries++;
@@ -1416,19 +1578,23 @@ class ResumableChunk extends resumableEventHandler_1.default {
                     else {
                         this.send();
                     }
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkRetry" in ResumableChunk.', this);
                     break;
             }
         };
         this.xhr.addEventListener('load', doneHandler, false);
         this.xhr.addEventListener('error', doneHandler, false);
         this.xhr.addEventListener('timeout', doneHandler, false);
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Created XHR for upload of ResumableChunk.', this, this.xhr);
         // Set up the basic query data from Resumable
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Creating data for XHR for upload of ResumableChunk...', this, this.xhr);
         let bytes = this.fileObj.file.slice(this.startByte, this.endByte, this.setChunkTypeFromFile ? this.fileObj.file.type : '');
         let data = null;
         let parameterNamespace = this.parameterNamespace;
         // Add data from the query options
         if (this.method === 'octet') {
             data = bytes;
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Created "octet" data for XHR for upload of ResumableChunk.', this, data);
         }
         else {
             data = new FormData();
@@ -1438,19 +1604,24 @@ class ResumableChunk extends resumableEventHandler_1.default {
             switch (this.chunkFormat) {
                 case 'blob':
                     data.append(parameterNamespace + this.fileParameterName, bytes, this.fileObj.fileName);
+                    resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Created "blob" data for XHR for upload of ResumableChunk.', this, data);
                     break;
                 case 'base64':
                     var fr = new FileReader();
                     fr.onload = () => {
                         data.append(parameterNamespace + this.fileParameterName, fr.result);
+                        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Created "base64" data for XHR for upload of ResumableChunk.', this, data);
                         this.xhr.send(data);
+                        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Sent XHR for upload of ResumableChunk.', this, this.xhr);
                     };
                     fr.readAsDataURL(bytes);
                     break;
             }
         }
         let target = this.getTarget('upload');
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Opening XHR for upload of ResumableChunk...', this, this.xhr);
         this.xhr.open(this.uploadMethod, target);
+        resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Opened XHR for upload of ResumableChunk.', this, this.xhr);
         if (this.method === 'octet') {
             this.xhr.setRequestHeader('Content-Type', 'application/octet-stream');
         }
@@ -1460,7 +1631,9 @@ class ResumableChunk extends resumableEventHandler_1.default {
         this.setCustomHeaders();
         if (this.chunkFormat === 'blob') {
             this.xhr.send(data);
+            resumableHelpers_1.default.printDebugHigh(this.debugVerbosityLevel, 'Sent XHR for upload of ResumableChunk.', this, this.xhr);
         }
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Started upload of ResumableChunk.', this);
     }
     /**
      * Return the response text of the underlying XMLHttpRequest if it exists
@@ -1494,6 +1667,7 @@ class ResumableChunk extends resumableEventHandler_1.default {
      */
     markComplete() {
         this.isMarkedComplete = true;
+        resumableHelpers_1.default.printDebugLow(this.debugVerbosityLevel, 'Marked ResumableChunk as complete.', this);
     }
 }
 exports["default"] = ResumableChunk;

@@ -12,6 +12,12 @@ declare const enum ResumableChunkStatus {
   ERROR = 'chunkError',
 }
 
+declare const enum DebugVerbosityLevel {
+  NONE = 0,
+  LOW = 1,
+  HIGH = 2,
+}
+
 declare interface ResumableConfiguration {
   /**
    * The target URL for the multipart POST request. This can be a string or a function that allows you to construct and return a value, based on supplied params. (Default: /)
@@ -205,4 +211,13 @@ declare interface ResumableConfiguration {
    * The target URL for the GET request to the server for each chunk to see if it already exists.
    */
   testTarget?: string;
+  /**
+   * The verbosity level for debug output in the development console.
+   * DebugVerbosityLevel.NONE (0) - no debug output
+   * DebugVerbosityLevel.LOW (1) - only main steps are logged (e.g. upload of a chunk is finished)
+   * DebugVerbosityLevel.HIGH (2) - additional logging between main steps is done (e.g. XMLHttpRequest for chunk upload created)
+   *
+   * Default: DebugVerbosityLevel.NONE (no debug output)
+   */
+  debugVerbosityLevel?: DebugVerbosityLevel;
 }

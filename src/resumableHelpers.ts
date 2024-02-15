@@ -14,7 +14,7 @@
 */
 
 // INTERNAL HELPER METHODS (handy, but ultimately not part of uploading)
-import {ExtendedFile} from "./types/types";
+import {DebugVerbosityLevel, ExtendedFile} from "./types/types";
 
 export default class ResumableHelpers {
   /**
@@ -107,5 +107,27 @@ export default class ResumableHelpers {
     if (joinedParams) target = target + separator + joinedParams;
 
     return target;
+  }
+
+  /**
+   * If given debugVerbosityLevel is LOW or higher, print message to debug log.
+   * Optional any number of arguments can be provided. They will be passed directly as additional arguments to the
+   * console call.
+   */
+  static printDebugLow(debugVerbosityLevel: DebugVerbosityLevel, message: string, ...args): void {
+    if (debugVerbosityLevel === DebugVerbosityLevel.LOW || debugVerbosityLevel === DebugVerbosityLevel.HIGH) {
+      console.debug(message, ...args);
+    }
+  }
+
+  /**
+   * If given debugVerbosityLevel is HIGH, print message to debug log.
+   * Optional any number of arguments can be provided. They will be passed directly as additional arguments to the
+   * console call.
+   */
+  static printDebugHigh(debugVerbosityLevel: DebugVerbosityLevel, message: string, ...args): void {
+    if (debugVerbosityLevel === DebugVerbosityLevel.HIGH) {
+      console.debug(message, ...args);
+    }
   }
 }

@@ -33,6 +33,7 @@ export declare class Resumable extends ResumableEventHandler {
     private prioritizeFirstAndLastChunk;
     private fileValidationErrorCallback;
     private simultaneousUploads;
+    private debugVerbosityLevel;
     constructor(options?: ResumableConfiguration);
     /**
      * Check whether the current browser supports the essential functions for the package to work.

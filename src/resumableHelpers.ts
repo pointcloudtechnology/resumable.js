@@ -26,16 +26,13 @@ export default class ResumableHelpers {
   }
 
   /**
-   * Generate a unique identifier for the given file based on its size, filename and relative path.
+   * Generate a unique identifier for the given file based on its size and filename.
    * @param {ExtendedFile} file The file for which the identifier should be generated
    * @returns {string} The unique identifier for the given file object
    */
   static generateUniqueIdentifier(file: ExtendedFile): string {
-    let relativePath = file.webkitRelativePath || file.relativePath || file.name;
-    // The '/' is used to display the relative path of the file. This information should be preserved
-    relativePath = relativePath.replace('/', '-');
     // Remove special characters
-    return (file.size + '-' + relativePath.replace(/[^0-9a-zA-Z_-]/img, ''));
+    return (file.size + '-' + file.name.replace(/[^0-9a-zA-Z_-]/img, ''));
   }
 
   /**

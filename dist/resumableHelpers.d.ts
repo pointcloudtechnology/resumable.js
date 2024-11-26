@@ -5,7 +5,7 @@ export default class ResumableHelpers {
      */
     static stopEvent(e: Event): void;
     /**
-     * Generate a unique identifier for the given file based on its size, filename and relative path.
+     * Generate a unique identifier for the given file based on its size and filename.
      * @param {ExtendedFile} file The file for which the identifier should be generated
      * @returns {string} The unique identifier for the given file object
      */

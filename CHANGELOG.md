@@ -10,11 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Fixed
-* Unify generation of unique identifier for resumable files (#31)
 
 ### Changed
 
 ### Removed
+
+## [4.0.0]
+### BREAKING
+Unique identifiers by default do not use the relative path anymore. This means that there is no support for files with the same name from different subfolders when dropping a folder directly.
+### Fixed
+* Unify generation of unique identifier for resumable files (#31)
 
 ## [3.0.0]
 ### BREAKING

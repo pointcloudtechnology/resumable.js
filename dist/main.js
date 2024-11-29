@@ -1570,7 +1570,7 @@ class ResumableChunk extends resumableEventHandler_1.default {
                     let retryInterval = this.chunkRetryInterval;
                     if (retryInterval !== undefined) {
                         this.pendingRetry = true;
-                        setTimeout(this.send, retryInterval);
+                        setTimeout(() => this.send(), retryInterval);
                     }
                     else {
                         this.send();

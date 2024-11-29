@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [4.0.1]
+### Fixed
+* Fix setTimeout callback without proper context (#36)
+
 ## [4.0.0]
 ### BREAKING
 Unique identifiers by default do not use the relative path anymore. This means that there is no support for files with the same name from different subfolders when dropping a folder directly.

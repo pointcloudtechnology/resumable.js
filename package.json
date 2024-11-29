@@ -1,6 +1,6 @@
 {
   "name": "resumablejs",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "A JavaScript library for providing multiple simultaneous, stable, fault-tolerant and resumable/restartable uploads via the HTML5 File API.",
   "main": "dist/main.js",
   "private": false,

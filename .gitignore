@@ -1,6 +1,8 @@
 *~
 samples/Node.js/node_modules/
 node_modules/
+dist/
+*.tgz
 
 # Eclipse
 .classpath

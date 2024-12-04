@@ -18,6 +18,12 @@ Examples are available in the `samples/` folder. Feel free to update the existin
 
 ## How can I use it?
 
+Install via npm or your preferred package manager:
+
+```
+npm install @pointcloudtechnology/resumablejs
+```
+
 A new `Resumable` object is created with information of what and where to post:
 
 ```js

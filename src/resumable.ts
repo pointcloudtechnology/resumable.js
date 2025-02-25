@@ -356,18 +356,19 @@ export class Resumable extends ResumableEventHandler {
     }
 
     // Remove files that are duplicated in the original array, based on their unique identifiers
-    let uniqueFiles = Helpers.uniqBy(files,
+    let filesWithoutDuplicates = Helpers.uniqBy(files,
       (file) => file.uniqueIdentifier,
       (file) => this.fire('fileProcessingFailed', file, 'duplicate', fileCategory),
     );
 
-    const resumableFiles = this.files[fileCategory];
-    let validationPromises = uniqueFiles.map(async (file) => {
-      // Check if the file has already been added (based on its unique identifier).
-      if (resumableFiles.some((addedFile) => addedFile.uniqueIdentifier === file.uniqueIdentifier)) {
+    const validationResults = [];
+    for (const file of filesWithoutDuplicates) {
+      // Check if the file has already been added with a previous batch (based on its unique identifier).
+      if (this.files[fileCategory].some((addedFile) => addedFile.uniqueIdentifier === file.uniqueIdentifier)) {
         this.fire('fileProcessingFailed', file, 'duplicate', fileCategory);
         Helpers.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "duplicate".', file);
-        return false;
+        validationResults.push(false);
+        continue;
       }
 
       let fileType: string = file.type.toLowerCase();
@@ -388,7 +389,8 @@ export class Resumable extends ResumableEventHandler {
           this.fire('fileProcessingFailed', file, 'fileType', fileCategory);
           this.fileTypeErrorCallback(file);
           Helpers.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "fileType".', file);
-          return false;
+          validationResults.push(false);
+          continue;
         }
       }
 
@@ -397,12 +399,14 @@ export class Resumable extends ResumableEventHandler {
         this.fire('fileProcessingFailed', file, 'minFileSize', fileCategory);
         this.minFileSizeErrorCallback(file);
         Helpers.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "minFileSize".', file);
-        return false;
+        validationResults.push(false);
+        continue;
       }
       if (this.maxFileSize !== undefined && file.size > this.maxFileSize) {
         this.fire('fileProcessingFailed', file, 'maxFileSize', fileCategory);
         this.maxFileSizeErrorCallback(file);
-        return false;
+        validationResults.push(false);
+        continue;
       }
 
       // Apply a custom validator based on the file extension
@@ -410,18 +414,19 @@ export class Resumable extends ResumableEventHandler {
         this.fire('fileProcessingFailed', file, 'validation', fileCategory);
         this.fileValidationErrorCallback(file);
         Helpers.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "validation".', file);
-        return false;
+        validationResults.push(false);
+        continue;
       }
 
-      return true;
-    });
+      validationResults.push(true);
+    }
 
-    const results = await Promise.all(validationPromises);
+    // Filter the previously deduplicated files based on their corresponding validation result.
+    const validatedFiles = filesWithoutDuplicates.filter((_v, index) => validationResults[index]);
 
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Successfully validated files.', results);
+    Helpers.printDebugLow(this.debugVerbosityLevel, 'Successfully validated files.', validatedFiles);
 
-    // Only include files that passed their validation tests
-    return files.filter((_v, index) => results[index]);
+    return validatedFiles;
   }
 
   /**
@@ -644,7 +649,7 @@ export class Resumable extends ResumableEventHandler {
    * Assign one or more DOM nodes as a drop target.
    *
    * @param domNodes The dom nodes to which the drop action should be assigned (can be an array or a single dom node).
-   * @param fileCategory The file category that will be assigned to all added files. Defaults to `defaultFileCategory`. 
+   * @param fileCategory The file category that will be assigned to all added files. Defaults to `defaultFileCategory`.
    */
   assignDrop(domNodes: HTMLElement | HTMLElement[], fileCategory: string = this.defaultFileCategory): void {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Assigning drop to DOM nodes...', domNodes, fileCategory);

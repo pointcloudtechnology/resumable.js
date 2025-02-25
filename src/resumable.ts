@@ -361,16 +361,14 @@ export class Resumable extends ResumableEventHandler {
       (file) => this.fire('fileProcessingFailed', file, 'duplicate', fileCategory),
     );
 
-    // Create an array with one promise for every file in `filesWithoutDuplicates`. Each promise resolves to a boolean.
-    // If this boolean is `true`, the file validated successfully. Otherwise the boolean will be `false`.
-    // This needs to be promise-based, because the callback function might call a function from `this.validators` which
-    // could be an asynchronous function.
-    let validationPromises = filesWithoutDuplicates.map(async (file) => {
+    const validationResults = [];
+    for (const file of filesWithoutDuplicates) {
       // Check if the file has already been added with a previous batch (based on its unique identifier).
       if (this.files[fileCategory].some((addedFile) => addedFile.uniqueIdentifier === file.uniqueIdentifier)) {
         this.fire('fileProcessingFailed', file, 'duplicate', fileCategory);
         Helpers.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "duplicate".', file);
-        return false;
+        validationResults.push(false);
+        continue;
       }
 
       let fileType: string = file.type.toLowerCase();
@@ -391,7 +389,8 @@ export class Resumable extends ResumableEventHandler {
           this.fire('fileProcessingFailed', file, 'fileType', fileCategory);
           this.fileTypeErrorCallback(file);
           Helpers.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "fileType".', file);
-          return false;
+          validationResults.push(false);
+          continue;
         }
       }
 
@@ -400,12 +399,14 @@ export class Resumable extends ResumableEventHandler {
         this.fire('fileProcessingFailed', file, 'minFileSize', fileCategory);
         this.minFileSizeErrorCallback(file);
         Helpers.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "minFileSize".', file);
-        return false;
+        validationResults.push(false);
+        continue;
       }
       if (this.maxFileSize !== undefined && file.size > this.maxFileSize) {
         this.fire('fileProcessingFailed', file, 'maxFileSize', fileCategory);
         this.maxFileSizeErrorCallback(file);
-        return false;
+        validationResults.push(false);
+        continue;
       }
 
       // Apply a custom validator based on the file extension
@@ -413,13 +414,13 @@ export class Resumable extends ResumableEventHandler {
         this.fire('fileProcessingFailed', file, 'validation', fileCategory);
         this.fileValidationErrorCallback(file);
         Helpers.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "validation".', file);
-        return false;
+        validationResults.push(false);
+        continue;
       }
 
-      return true;
-    });
+      validationResults.push(true);
+    }
 
-    const validationResults = await Promise.all(validationPromises);
     // Filter the previously deduplicated files based on their corresponding validation result.
     const validatedFiles = filesWithoutDuplicates.filter((_v, index) => validationResults[index]);
 

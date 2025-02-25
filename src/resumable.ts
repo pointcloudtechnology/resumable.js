@@ -356,15 +356,18 @@ export class Resumable extends ResumableEventHandler {
     }
 
     // Remove files that are duplicated in the original array, based on their unique identifiers
-    let uniqueFiles = Helpers.uniqBy(files,
+    let filesWithoutDuplicates = Helpers.uniqBy(files,
       (file) => file.uniqueIdentifier,
       (file) => this.fire('fileProcessingFailed', file, 'duplicate', fileCategory),
     );
 
-    const resumableFiles = this.files[fileCategory];
-    let validationPromises = uniqueFiles.map(async (file) => {
-      // Check if the file has already been added (based on its unique identifier).
-      if (resumableFiles.some((addedFile) => addedFile.uniqueIdentifier === file.uniqueIdentifier)) {
+    // Create an array with one promise for every file in `filesWithoutDuplicates`. Each promise resolves to a boolean.
+    // If this boolean is `true`, the file validated successfully. Otherwise the boolean will be `false`.
+    // This needs to be promise-based, because the callback function might call a function from `this.validators` which
+    // could be an asynchronous function.
+    let validationPromises = filesWithoutDuplicates.map(async (file) => {
+      // Check if the file has already been added with a previous batch (based on its unique identifier).
+      if (this.files[fileCategory].some((addedFile) => addedFile.uniqueIdentifier === file.uniqueIdentifier)) {
         this.fire('fileProcessingFailed', file, 'duplicate', fileCategory);
         Helpers.printDebugLow(this.debugVerbosityLevel, 'File validation failed because of "duplicate".', file);
         return false;
@@ -416,12 +419,13 @@ export class Resumable extends ResumableEventHandler {
       return true;
     });
 
-    const results = await Promise.all(validationPromises);
+    const validationResults = await Promise.all(validationPromises);
+    // Filter the previously deduplicated files based on their corresponding validation result.
+    const validatedFiles = filesWithoutDuplicates.filter((_v, index) => validationResults[index]);
 
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Successfully validated files.', results);
+    Helpers.printDebugLow(this.debugVerbosityLevel, 'Successfully validated files.', validatedFiles);
 
-    // Only include files that passed their validation tests
-    return files.filter((_v, index) => results[index]);
+    return validatedFiles;
   }
 
   /**
@@ -644,7 +648,7 @@ export class Resumable extends ResumableEventHandler {
    * Assign one or more DOM nodes as a drop target.
    *
    * @param domNodes The dom nodes to which the drop action should be assigned (can be an array or a single dom node).
-   * @param fileCategory The file category that will be assigned to all added files. Defaults to `defaultFileCategory`. 
+   * @param fileCategory The file category that will be assigned to all added files. Defaults to `defaultFileCategory`.
    */
   assignDrop(domNodes: HTMLElement | HTMLElement[], fileCategory: string = this.defaultFileCategory): void {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Assigning drop to DOM nodes...', domNodes, fileCategory);

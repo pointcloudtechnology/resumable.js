@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [4.0.3]
+Fix broken npm package release (no changes since v4.0.2)
+
 ## [4.0.2]
 ### Fixed
 * Fix file validation for duplicate files (#39)

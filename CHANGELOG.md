@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Fixed
+Add `undefined` as a possible return type for function based on `find` (#45)
 
 ### Changed
 

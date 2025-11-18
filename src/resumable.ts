@@ -96,7 +96,7 @@ export class Resumable extends ResumableEventHandler {
   /**
    * Assign the attributes of this instance via destructuring of the options object.
    */
-  private setInstanceProperties(options: ResumableConfiguration) {
+  private setInstanceProperties(options: ResumableConfiguration): void {
     Object.assign(this, options);
 
     // Explicitly test for null because other falsy values could be used as default.
@@ -127,7 +127,7 @@ export class Resumable extends ResumableEventHandler {
 
     // Create/Check file types object.
     if (Array.isArray(this.fileTypes)) {
-      // If fileTypes are given as an array, these types should be used for all file categores.
+      // If fileTypes are given as an array, these types should be used for all file categories.
       // Create the file types object and assign the given array to every file category.
       const fileTypes = this.fileTypes.slice();
 
@@ -166,7 +166,7 @@ export class Resumable extends ResumableEventHandler {
   }
 
   /**
-   * Transforms a single fileEntry or directoryEntry item into a list of File objects this method is used to convert
+   * Transforms a single fileEntry or directoryEntry item into a list of File objects. This method is used to convert
    * entries found inside dragged-and-dropped directories.
    * @param {Object} item item to upload, may be file or directory entry
    * @param {string} path current file path
@@ -861,7 +861,7 @@ export class Resumable extends ResumableEventHandler {
   /**
    * Retrieve a ResumableFile object from the file list by its unique identifier.
    */
-  getFromUniqueIdentifier(uniqueIdentifier: string): ResumableFile {
+  getFromUniqueIdentifier(uniqueIdentifier: string): ResumableFile | undefined {
     return this.getFilesOfAllCategories().find((file) => file.uniqueIdentifier === uniqueIdentifier);
   };
 

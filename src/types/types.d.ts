@@ -18,6 +18,19 @@ declare const enum DebugVerbosityLevel {
   HIGH = 2,
 }
 
+declare type UploadTaskId = `upload-task-${number}`;
+
+declare interface UploadTask {
+  /** The unique ID of the upload task. */
+  id: UploadTaskId;
+  /** The index of the category in the file categories array that this process is currently uploading. */
+  fileCategoryIndex: number | undefined;
+  /** The index of the file in the current file category that this process is currently uploading. */
+  fileIndex: number | undefined;
+  /** The index of the chunk in the current file that this process is currently uploading. */
+  chunkIndex: number | undefined;
+}
+
 declare interface ResumableConfiguration {
   /**
    * The target URL for the multipart POST request. This can be a string or a function that allows you to construct and return a value, based on supplied params. (Default: /)

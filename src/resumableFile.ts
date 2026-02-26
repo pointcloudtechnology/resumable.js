@@ -169,7 +169,12 @@ export default class ResumableFile extends ResumableEventHandler {
       if (this._error) return;
       this.fire('chunkSuccess', chunk, message);
       this.fire('fileProgress', this, message);
-      if (this.isComplete) {
+
+      // To prevent iterating over all chunks every time any chunk is uploaded, we only check for completion when the
+      // last chunks are uploaded. As the chunks are processed in order, we can simply check their offset against the
+      // length of the chunks array to determine if we are at the end of the file. We have to consider the simultaneous
+      // uploads because it could happen that the last chunk is uploaded faster than e.g. the one before that.
+      if (chunk.offset >= this._chunks.length - this.simultaneousUploads && this.isComplete) {
         this.fire('fileSuccess', this, message);
       }
       Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkSuccess" in ResumableFile.', this, chunk, message);

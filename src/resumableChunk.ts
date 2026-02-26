@@ -25,7 +25,7 @@ export default class ResumableChunk extends ResumableEventHandler {
   private fileObj: ResumableFile;
   private fileObjSize: number;
   private fileObjType: string;
-  private offset: number;
+  private _offset: number;
   private lastProgressCallback: Date = new Date;
   private tested: boolean = false;
   private retries: number = 0;
@@ -75,11 +75,11 @@ export default class ResumableChunk extends ResumableEventHandler {
     this.fileObj = fileObj;
     this.fileObjSize = fileObj.size;
     this.fileObjType = fileObj.file.type;
-    this.offset = offset;
+    this._offset = offset;
 
     // Computed properties
-    this.startByte = this.offset * this.chunkSize;
-    this.endByte = Math.min(this.fileObjSize, (this.offset + 1) * this.chunkSize);
+    this.startByte = this._offset * this.chunkSize;
+    this.endByte = Math.min(this.fileObjSize, (this._offset + 1) * this.chunkSize);
     this.xhr = null;
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Constructed ResumableChunk.', this);
   }
@@ -113,6 +113,14 @@ export default class ResumableChunk extends ResumableEventHandler {
   }
 
   /**
+   * Get the offset of this chunk in the ResumableFile. This is equivalent to the index in the ResumableFile's `chunks`
+   * array.
+   */
+  get offset(): number {
+    return this._offset;
+  }
+
+  /**
    * Get query parameters for this chunk as an object, combined with custom parameters if provided
    */
   get formattedQuery(): object {
@@ -122,7 +130,7 @@ export default class ResumableChunk extends ResumableEventHandler {
     // Add extra data to identify chunk
     const extraData = {
       // define key/value pairs for additional parameters
-      [this.chunkNumberParameterName]: this.offset + 1,
+      [this.chunkNumberParameterName]: this._offset + 1,
       [this.chunkSizeParameterName]: this.chunkSize,
       [this.currentChunkSizeParameterName]: this.endByte - this.startByte,
       [this.totalSizeParameterName]: this.fileObjSize,

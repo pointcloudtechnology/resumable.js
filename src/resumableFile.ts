@@ -37,6 +37,7 @@ export default class ResumableFile extends ResumableEventHandler {
   private _error: boolean;
   private _chunks: ResumableChunk[] = [];
   private chunkSize: number = 1024 * 1024; // 1 MB
+  private simultaneousUploads: number = 3;
 
   private debugVerbosityLevel: DebugVerbosityLevel = DebugVerbosityLevel.NONE;
 

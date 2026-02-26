@@ -112,10 +112,6 @@ declare interface ResumableConfiguration {
    **/
   method?: string;
   /**
-   * Prioritize first and last chunks of all files. This can be handy if you can determine if a file is valid for your service from only the first or last chunk. For example, photo or video meta data is usually located in the first part of a file, making it easy to test support from only the first chunk. (Default: false)
-   **/
-  prioritizeFirstAndLastChunk?: boolean;
-  /**
    * Make a GET request to the server for each chunks to see if it already exists. If implemented on the server-side, this will allow for upload resumes even after a browser crash or even a computer restart. (Default: true)
    **/
   testChunks?: boolean;

@@ -57,7 +57,6 @@
       method:'multipart',
       uploadMethod: 'POST',
       testMethod: 'GET',
-      prioritizeFirstAndLastChunk:false,
       target:'/',
       testTarget: null,
       parameterNamespace:'',
@@ -116,7 +115,7 @@
       }
     };
     $.indexOf = function(array, obj) {
-    	if (array.indexOf) { return array.indexOf(obj); }     
+    	if (array.indexOf) { return array.indexOf(obj); }
     	for (var i = 0; i < array.length; i++) {
             if (array[i] === obj) { return i; }
         }
@@ -947,26 +946,6 @@
     $.uploadNextChunk = function(){
       var found = false;
 
-      // In some cases (such as videos) it's really handy to upload the first
-      // and last chunk of a file quickly; this let's the server check the file's
-      // metadata and determine if there's even a point in continuing.
-      if ($.getOpt('prioritizeFirstAndLastChunk')) {
-        $h.each($.files, function(file){
-          if(file.chunks.length && file.chunks[0].status()=='pending' && file.chunks[0].preprocessState === 0) {
-            file.chunks[0].send();
-            found = true;
-            return(false);
-          }
-          if(file.chunks.length>1 && file.chunks[file.chunks.length-1].status()=='pending' && file.chunks[file.chunks.length-1].preprocessState === 0) {
-            file.chunks[file.chunks.length-1].send();
-            found = true;
-            return(false);
-          }
-        });
-        if(found) return(true);
-      }
-
-      // Now, simply look for the next, best thing to upload
       $h.each($.files, function(file){
         found = file.upload();
         if(found) return(false);

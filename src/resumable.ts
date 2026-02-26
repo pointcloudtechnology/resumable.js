@@ -60,7 +60,6 @@ export class Resumable extends ResumableEventHandler {
     alert(file.fileName || file.name + ' is too small, please upload files larger than ' +
       Helpers.formatSize(this.minFileSize) + '.');
   };
-  private prioritizeFirstAndLastChunk: boolean = false;
   private fileValidationErrorCallback: Function = (file) => {};
   private simultaneousUploads: number = 3;
 
@@ -533,25 +532,6 @@ export class Resumable extends ResumableEventHandler {
     Helpers.printDebugHigh(this.debugVerbosityLevel, 'Queueing next chunk upload...');
     const allResumableFiles = this.getFilesOfAllCategories();
 
-    // In some cases (such as videos) it's really handy to upload the first
-    // and last chunk of a file quickly; this lets the server check the file's
-    // metadata and determine if there's even a point in continuing.
-    if (this.prioritizeFirstAndLastChunk) {
-      for (const file of allResumableFiles) {
-        if (file.chunks.length && file.chunks[0].status === ResumableChunkStatus.PENDING) {
-          file.chunks[0].send();
-          Helpers.printDebugHigh(this.debugVerbosityLevel, 'Queued upload of prioritized first chunk.', file);
-          return;
-        }
-        if (file.chunks.length > 1 && file.chunks[file.chunks.length - 1].status === ResumableChunkStatus.PENDING) {
-          file.chunks[file.chunks.length - 1].send();
-          Helpers.printDebugHigh(this.debugVerbosityLevel, 'Queued upload of prioritized last chunk.', file);
-          return;
-        }
-      }
-    }
-
-    // Now, simply look for the next best thing to upload
     for (const file of allResumableFiles) {
       if (file.upload()) {
         Helpers.printDebugHigh(this.debugVerbosityLevel, 'Queued upload of next chunk.', file);

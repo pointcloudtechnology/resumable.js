@@ -17,68 +17,47 @@
   </p>
 </div>
 
+<div style="margin-top: 1rem; display: flex; flex-direction: column; width: fit-content;">
+  <label>
+    Current verbosity level: <span id="verbosityLevelDisplay"></span>
+  </label>
+  <button onclick="cycleVerbosityLevel()">
+    Cycle message verbosity level
+  </button>
+</div>
+
 <script src="dist/main.js"></script>
 <script>
-  const testDebugging = true;
+  let verbosityLevel = 2;
 
   var r = new resumablejs.Resumable({
     target: 'test.html',
     fileCategories: ['test-category-1', 'test-category-2', 'test-category-2'],
-    debugVerbosityLevel: testDebugging ? 2 : 0,
+    debugVerbosityLevel: verbosityLevel,
     maxChunkRetries: 0,
   });
 
   r.assignBrowse(document.getElementById('browseButton'), false, 'test-category-1');
   r.assignDrop(document.getElementById('dropArea'), 'test-category-1');
 
-  if (testDebugging) {
-    r.on('fileAdded', function(file, event) {
-      r.upload();
-    });
-    r.on('filesAdded', function(array) {
-      r.upload();
-    });
-  } else {
-    r.on('fileSuccess', function(file) {
-      console.debug('fileSuccess', file);
-    });
-    r.on('fileProgress', function(file) {
-      console.debug('fileProgress', file);
-    });
-    r.on('fileAdded', function(file, event) {
-      r.upload();
-      console.debug('fileAdded', event);
-    });
-    r.on('filesAdded', function(array) {
-      r.upload();
-      console.debug('filesAdded', array);
-    });
-    r.on('fileRetry', function(file) {
-      console.debug('fileRetry', file);
-    });
-    r.on('fileError', function(file, message) {
-      console.debug('fileError', file, message);
-    });
-    r.on('uploadStart', function() {
-      console.debug('uploadStart');
-    });
-    r.on('complete', function() {
-      console.debug('complete');
-    });
-    r.on('progress', function() {
-      console.debug('progress');
-    });
-    r.on('error', function(message, file) {
-      console.debug('error', message, file);
-    });
-    r.on('pause', function() {
-      console.debug('pause');
-    });
-    r.on('cancel', function() {
-      console.debug('cancel');
-    });
-  }
+  r.on('fileAdded', function(file, event) {
+    r.upload();
+  });
+  r.on('filesAdded', function(array) {
+    r.upload();
+  });
 
+  cycleVerbosityLevel = function() {
+    verbosityLevel = (verbosityLevel + 1) % 3;
+    r.debugVerbosityLevel = verbosityLevel;
+    updateVerbosityDisplay();
+  };
+
+  updateVerbosityDisplay = function() {
+    document.getElementById('verbosityLevelDisplay').innerText = verbosityLevel;
+  };
+
+  updateVerbosityDisplay();
 </script>
 
 

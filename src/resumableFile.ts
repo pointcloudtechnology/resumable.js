@@ -31,6 +31,8 @@ export default class ResumableFile extends ResumableEventHandler {
   private _size: number;
   private _relativePath: string;
   private _uniqueIdentifier: string;
+  /** The offset of that file in the files array of the corresponding file category. */
+  private _offset: number;
   private _fileCategory: string;
   private _error: boolean;
   private _chunks: ResumableChunk[] = [];
@@ -38,7 +40,7 @@ export default class ResumableFile extends ResumableEventHandler {
 
   private debugVerbosityLevel: DebugVerbosityLevel = DebugVerbosityLevel.NONE;
 
-  constructor(file: File, uniqueIdentifier: string, fileCategory: string, options: object) {
+  constructor(file: File, uniqueIdentifier: string, fileCategory: string, offset: number, options: object) {
     super();
     this.opts = options;
     this.setInstanceProperties(options);
@@ -47,6 +49,7 @@ export default class ResumableFile extends ResumableEventHandler {
     this._size = file.size;
     this._relativePath = file.webkitRelativePath || this._fileName;
     this._uniqueIdentifier = uniqueIdentifier;
+    this._offset = offset;
     this._fileCategory = fileCategory;
     this._error = uniqueIdentifier !== undefined;
 
@@ -82,6 +85,10 @@ export default class ResumableFile extends ResumableEventHandler {
 
   get uniqueIdentifier(): string {
     return this._uniqueIdentifier;
+  }
+
+  get offset(): number {
+    return this._offset;
   }
 
   get fileCategory(): string {

@@ -483,7 +483,13 @@ export class Resumable extends ResumableEventHandler {
 
     Helpers.printDebugHigh(this.debugVerbosityLevel,'Creating ResumableFiles for every file from file list...');
     for (const file of validatedFiles) {
-      let f = new ResumableFile(file, file.uniqueIdentifier, fileCategory, this.opts);
+      let f = new ResumableFile(
+        file,
+        file.uniqueIdentifier,
+        fileCategory,
+        this.files[fileCategory].length,
+        this.opts,
+      );
       f.on('chunkingStart', (...args) => this.handleChunkingStart(args, fileCategory));
       f.on('chunkingProgress', (...args) => this.handleChunkingProgress(args, fileCategory));
       f.on('chunkingComplete', (...args) => this.handleChunkingComplete(args, fileCategory));

@@ -1,7 +1,7 @@
 import Helpers from './resumableHelpers';
 import ResumableEventHandler from './resumableEventHandler';
 import ResumableFile from './resumableFile';
-import {DebugVerbosityLevel, ResumableChunkStatus, ResumableConfiguration} from './types/types';
+import {DebugVerbosityLevel, ResumableChunkStatus, ResumableConfiguration, UploadTaskId} from './types/types';
 
 /*
 * MIT Licensed
@@ -35,6 +35,7 @@ export default class ResumableChunk extends ResumableEventHandler {
   private startByte: number;
   private endByte: number;
   private xhr: XMLHttpRequest = null;
+  private _uploadTaskId: UploadTaskId = null;
 
   // Option properties
   private chunkSize: number = 1024 * 1024; // 1 MB
@@ -120,6 +121,10 @@ export default class ResumableChunk extends ResumableEventHandler {
     return this._offset;
   }
 
+  get uploadTaskId(): UploadTaskId {
+    return this._uploadTaskId;
+  }
+
   /**
    * Get query parameters for this chunk as an object, combined with custom parameters if provided
    */
@@ -184,7 +189,7 @@ export default class ResumableChunk extends ResumableEventHandler {
   /**
    * Makes a GET request without any data to see if the chunk has already been uploaded in a previous session
    */
-  private test(): void {
+  private test(uploadTaskId: UploadTaskId): void {
     Helpers.printDebugHigh(this.debugVerbosityLevel, 'Sending test request for ResumableChunk...', this);
     // Set up request and listen for event
     this.xhr = new XMLHttpRequest();
@@ -194,9 +199,9 @@ export default class ResumableChunk extends ResumableEventHandler {
       this.tested = true;
       var status = this.status;
       if (status === ResumableChunkStatus.SUCCESS) {
-        this.fire('chunkSuccess', this.message());
+        this.fire('chunkSuccess', uploadTaskId, this.message());
       } else {
-        this.send();
+        this.send(uploadTaskId);
       }
       Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled test request response for ResumableChunk.', this);
     };
@@ -222,28 +227,38 @@ export default class ResumableChunk extends ResumableEventHandler {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Aborting upload of ResumableChunk...', this);
     if (this.xhr) this.xhr.abort();
     this.xhr = null;
+    this._uploadTaskId = null;
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Aborted upload of ResumableChunk.', this);
   }
 
   /**
    *  Uploads the actual data in a POST call
    */
-  send(): void {
+  send(uploadTaskId: UploadTaskId): void {
+    if (this._uploadTaskId) {
+      throw new Error('uploadTaskId was already set for ResumableChunk when calling send().');
+    }
+
     if (this.testChunks && !this.tested) {
       Helpers.printDebugLow(
         this.debugVerbosityLevel,
         'Testing upload status of ResumableChunk before uploading...',
         this
       );
-      this.test();
+
+      this.test(uploadTaskId);
+
       Helpers.printDebugLow(
         this.debugVerbosityLevel,
         'Tested upload status of ResumableChunk before uploading. Chunk already uploaded: '
           + (this.status === ResumableChunkStatus.SUCCESS ? 'yes' : 'no'),
         this
       );
+
       return;
     }
+
+    this._uploadTaskId = uploadTaskId;
 
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Starting upload of ResumableChunk...', this);
 
@@ -271,12 +286,12 @@ export default class ResumableChunk extends ResumableEventHandler {
       switch (status) {
         case ResumableChunkStatus.SUCCESS:
           Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkSuccess" in ResumableChunk...', this);
-          this.fire('chunkSuccess', this.message());
+          this.fire('chunkSuccess', uploadTaskId, this.message());
           Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkSuccess" in ResumableChunk.', this);
           break;
         case ResumableChunkStatus.ERROR:
           Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkError" in ResumableChunk...', this);
-          this.fire('chunkError', this.message());
+          this.fire('chunkError', uploadTaskId, this.message());
           Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkError" in ResumableChunk.', this);
           break;
         default:
@@ -287,9 +302,9 @@ export default class ResumableChunk extends ResumableEventHandler {
           let retryInterval = this.chunkRetryInterval;
           if (retryInterval !== undefined) {
             this.pendingRetry = true;
-            setTimeout(() => this.send(), retryInterval);
+            setTimeout(() => this.send(uploadTaskId), retryInterval);
           } else {
-            this.send();
+            this.send(uploadTaskId);
           }
           Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkRetry" in ResumableChunk.', this);
           break;

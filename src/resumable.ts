@@ -17,6 +17,7 @@ import Helpers from './resumableHelpers';
 import ResumableFile from './resumableFile';
 import ResumableEventHandler from './resumableEventHandler';
 import {DebugVerbosityLevel, ExtendedFile, ResumableConfiguration, UploadTask, UploadTaskId} from './types/types';
+import {DefaultConfiguration} from './resumableDefaultValues';
 
 /**
  * An instance of a resumable upload handler that contains one or multiple files which should be uploaded in chunks.
@@ -43,34 +44,34 @@ export class Resumable extends ResumableEventHandler {
   private uploadTaskIdCurrentlyCheckingIfUploadFinished: UploadTaskId | undefined = undefined;
 
   // Configuration Options
-  private clearInput: boolean = true;
-  private dragOverClass: string = 'dragover';
-  private fileCategories: string[] = [];
-  private defaultFileCategory: string | null = 'default';
-  private fileTypes: string[] | {[fileCategory: string]: string[]} = [];
+  private clearInput: boolean = DefaultConfiguration.clearInput;
+  private dragOverClass: string = DefaultConfiguration.dragOverClass;
+  private fileCategories: string[] = DefaultConfiguration.fileCategories.slice();
+  private defaultFileCategory: string | null = DefaultConfiguration.defaultFileCategory;
+  private fileTypes: string[] | {[fileCategory: string]: string[]} = DefaultConfiguration.fileTypes;
   private fileTypeErrorCallback: Function = (file) => {
     alert(`${file.fileName || file.name} has an unsupported file type.`);
   };
-  private generateUniqueIdentifier: Function = null;
-  private maxFileSize?: number;
+  private generateUniqueIdentifier: Function = DefaultConfiguration.generateUniqueIdentifier;
+  private maxFileSize?: number = DefaultConfiguration.maxFileSize;
   private maxFileSizeErrorCallback: Function = (file) => {
     alert(file.fileName || file.name + ' is too large, please upload files less than ' +
       Helpers.formatSize(this.maxFileSize) + '.');
   };
-  private maxFiles?: number;
+  private maxFiles?: number = DefaultConfiguration.maxFiles;
   private maxFilesErrorCallback: Function = (files) => {
     var maxFiles = this.maxFiles;
     alert('Please upload no more than ' + maxFiles + ' file' + (maxFiles === 1 ? '' : 's') + ' at a time.');
   };
-  private minFileSize: number = 1;
+  private minFileSize: number = DefaultConfiguration.minFileSize;
   private minFileSizeErrorCallback: Function = (file) => {
     alert(file.fileName || file.name + ' is too small, please upload files larger than ' +
       Helpers.formatSize(this.minFileSize) + '.');
   };
   private fileValidationErrorCallback: Function = (file) => {};
-  private simultaneousUploads: number = 3;
+  private simultaneousUploads: number = DefaultConfiguration.simultaneousUploads;
 
-  private debugVerbosityLevel: DebugVerbosityLevel = DebugVerbosityLevel.NONE;
+  private debugVerbosityLevel: DebugVerbosityLevel = DefaultConfiguration.debugVerbosityLevel;
 
   constructor(options: ResumableConfiguration = {}) {
     super();

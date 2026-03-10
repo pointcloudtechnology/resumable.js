@@ -17,6 +17,7 @@ import ResumableChunk from './resumableChunk';
 import Helpers from './resumableHelpers';
 import ResumableEventHandler from './resumableEventHandler';
 import {DebugVerbosityLevel, ResumableChunkStatus, ResumableConfiguration, UploadTaskId} from './types/types';
+import {DefaultConfiguration} from './resumableDefaultValues';
 
 /**
  * A single file object that should be uploaded in multiple chunks
@@ -36,10 +37,10 @@ export default class ResumableFile extends ResumableEventHandler {
   private _fileCategory: string;
   private _error: boolean;
   private _chunks: ResumableChunk[] = [];
-  private chunkSize: number = 1024 * 1024; // 1 MB
-  private simultaneousUploads: number = 3;
+  private chunkSize: number = DefaultConfiguration.chunkSize;
+  private simultaneousUploads: number = DefaultConfiguration.simultaneousUploads;
 
-  private debugVerbosityLevel: DebugVerbosityLevel = DebugVerbosityLevel.NONE;
+  private debugVerbosityLevel: DebugVerbosityLevel = DefaultConfiguration.debugVerbosityLevel;
 
   constructor(file: File, uniqueIdentifier: string, fileCategory: string, offset: number, options: object) {
     super();

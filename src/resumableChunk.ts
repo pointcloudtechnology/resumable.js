@@ -2,6 +2,7 @@ import Helpers from './resumableHelpers';
 import ResumableEventHandler from './resumableEventHandler';
 import ResumableFile from './resumableFile';
 import {DebugVerbosityLevel, ResumableChunkStatus, ResumableConfiguration, UploadTaskId} from './types/types';
+import {DefaultConfiguration} from './resumableDefaultValues';
 
 /*
 * MIT Licensed
@@ -38,37 +39,37 @@ export default class ResumableChunk extends ResumableEventHandler {
   private _uploadTaskId: UploadTaskId = null;
 
   // Option properties
-  private chunkSize: number = 1024 * 1024; // 1 MB
-  private fileParameterName: string = 'file';
-  private chunkNumberParameterName: string = 'resumableChunkNumber';
-  private chunkSizeParameterName: string = 'resumableChunkSize';
-  private currentChunkSizeParameterName: string = 'resumableCurrentChunkSize';
-  private totalSizeParameterName: string = 'resumableTotalSize';
-  private typeParameterName: string = 'resumableType';
-  private identifierParameterName: string = 'resumableIdentifier';
-  private fileCategoryParameterName: string = 'resumableFileCategory';
-  private fileNameParameterName: string = 'resumableFilename';
-  private relativePathParameterName: string = 'resumableRelativePath';
-  private totalChunksParameterName: string = 'resumableTotalChunks';
-  private throttleProgressCallbacks: number = 0.5;
-  private query: object = {};
-  private headers: object = {};
-  private method: string = 'multipart';
-  private uploadMethod: string = 'POST';
-  private testMethod: string = 'GET';
-  private parameterNamespace: string = '';
-  private testChunks: boolean = true;
-  private maxChunkRetries: number = 100;
-  private chunkRetryInterval?: number = undefined;
-  private permanentErrors: number[] = [400, 401, 403, 404, 409, 415, 500, 501];
-  private withCredentials: boolean = false;
-  private xhrTimeout: number = 0;
-  private chunkFormat: string = 'blob';
-  private setChunkTypeFromFile: boolean = false;
-  private target: string = '/';
-  private testTarget: string = '';
+  private chunkSize: number = DefaultConfiguration.chunkSize;
+  private fileParameterName: string = DefaultConfiguration.fileParameterName;
+  private chunkNumberParameterName: string = DefaultConfiguration.chunkNumberParameterName;
+  private chunkSizeParameterName: string = DefaultConfiguration.chunkSizeParameterName;
+  private currentChunkSizeParameterName: string = DefaultConfiguration.currentChunkSizeParameterName;
+  private totalSizeParameterName: string = DefaultConfiguration.totalSizeParameterName;
+  private typeParameterName: string = DefaultConfiguration.typeParameterName;
+  private identifierParameterName: string = DefaultConfiguration.identifierParameterName;
+  private fileCategoryParameterName: string = DefaultConfiguration.fileCategoryParameterName;
+  private fileNameParameterName: string = DefaultConfiguration.fileNameParameterName;
+  private relativePathParameterName: string = DefaultConfiguration.relativePathParameterName;
+  private totalChunksParameterName: string = DefaultConfiguration.totalChunksParameterName;
+  private throttleProgressCallbacks: number = DefaultConfiguration.throttleProgressCallbacks;
+  private query: object = DefaultConfiguration.query;
+  private headers: object = DefaultConfiguration.headers;
+  private method: string = DefaultConfiguration.method;
+  private uploadMethod: string = DefaultConfiguration.uploadMethod;
+  private testMethod: string = DefaultConfiguration.testMethod;
+  private parameterNamespace: string = DefaultConfiguration.parameterNamespace;
+  private testChunks: boolean = DefaultConfiguration.testChunks;
+  private maxChunkRetries: number = DefaultConfiguration.maxChunkRetries;
+  private chunkRetryInterval?: number = DefaultConfiguration.chunkRetryInterval;
+  private permanentErrors: number[] = DefaultConfiguration.permanentErrors;
+  private withCredentials: boolean = DefaultConfiguration.withCredentials;
+  private xhrTimeout: number = DefaultConfiguration.xhrTimeout;
+  private chunkFormat: string = DefaultConfiguration.chunkFormat;
+  private setChunkTypeFromFile: boolean = DefaultConfiguration.setChunkTypeFromFile;
+  private target: string = DefaultConfiguration.target;
+  private testTarget: string = DefaultConfiguration.testTarget;
 
-  private debugVerbosityLevel: DebugVerbosityLevel = DebugVerbosityLevel.NONE;
+  private debugVerbosityLevel: DebugVerbosityLevel = DefaultConfiguration.debugVerbosityLevel;
 
   constructor(fileObj: ResumableFile, offset: number, options: ResumableConfiguration) {
     super();

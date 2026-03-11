@@ -32,6 +32,7 @@ export class Resumable extends ResumableEventHandler {
   private validators: {[fileType: string]: Function} = {};
   private uploadTasks: Map<UploadTaskId, UploadTask> = new Map();
   private support: boolean;
+  private isCancelled: boolean = false;
   /**
    * When this is set, all upload tasks reached the end of the file list and no more chunks are left to upload.
    * One task is currently iterating over all chunks once more to check if all of them really are uploaded.
@@ -552,6 +553,10 @@ export class Resumable extends ResumableEventHandler {
    * Queue a new chunk to be uploaded that is currently awaiting upload.
    */
   private uploadNextChunk(currentUploadTaskId: UploadTaskId): void {
+    if (this.isCancelled) {
+      return;
+    }
+
     if (this.uploadTaskIdCurrentlyCheckingIfUploadFinished !== undefined) {
       if (this.uploadTaskIdCurrentlyCheckingIfUploadFinished === currentUploadTaskId) {
         // The final check for upload completion is currently performed by this upload task. The next relevant chunk
@@ -1004,6 +1009,8 @@ export class Resumable extends ResumableEventHandler {
   upload(): void {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Starting Upload...');
 
+    this.isCancelled = false;
+
     if (this.isUploading) {
       Helpers.printDebugLow(this.debugVerbosityLevel, 'Already uploading. Not starting again.');
       return;
@@ -1047,11 +1054,24 @@ export class Resumable extends ResumableEventHandler {
   cancel(): void {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Cancelling Upload...');
     this.fire('beforeCancel');
-    const allFiles = this.getFilesOfAllCategories();
-    allFiles.forEach((file) => {
-      file.cancel();
-    });
 
+    this.isCancelled = true;
+
+    // Abort the upload of all currently uploading files.
+    for (const [, uploadTask] of this.uploadTasks) {
+      if (
+        uploadTask.fileCategoryIndex !== undefined
+        && uploadTask.fileIndex !== undefined
+        && uploadTask.chunkIndex !== undefined
+      ) {
+        const file = this.files[this.fileCategories[uploadTask.fileCategoryIndex]][uploadTask.fileIndex];
+        file.abort();
+      }
+
+      this.resetUploadTask(uploadTask);
+    }
+
+    // Remove all files.
     this.fileCategories.forEach((fileCategory) => {
       this.files[fileCategory] = [];
     });

@@ -16,7 +16,8 @@
 import ResumableChunk from './resumableChunk';
 import Helpers from './resumableHelpers';
 import ResumableEventHandler from './resumableEventHandler';
-import {DebugVerbosityLevel, ResumableChunkStatus, ResumableConfiguration} from './types/types';
+import {DebugVerbosityLevel, ResumableChunkStatus, ResumableConfiguration, UploadTaskId} from './types/types';
+import {DefaultConfiguration} from './resumableDefaultValues';
 
 /**
  * A single file object that should be uploaded in multiple chunks
@@ -31,14 +32,17 @@ export default class ResumableFile extends ResumableEventHandler {
   private _size: number;
   private _relativePath: string;
   private _uniqueIdentifier: string;
+  /** The offset of that file in the files array of the corresponding file category. */
+  private _offset: number;
   private _fileCategory: string;
   private _error: boolean;
   private _chunks: ResumableChunk[] = [];
-  private chunkSize: number = 1024 * 1024; // 1 MB
+  private chunkSize: number = DefaultConfiguration.chunkSize;
+  private simultaneousUploads: number = DefaultConfiguration.simultaneousUploads;
 
-  private debugVerbosityLevel: DebugVerbosityLevel = DebugVerbosityLevel.NONE;
+  private debugVerbosityLevel: DebugVerbosityLevel = DefaultConfiguration.debugVerbosityLevel;
 
-  constructor(file: File, uniqueIdentifier: string, fileCategory: string, options: object) {
+  constructor(file: File, uniqueIdentifier: string, fileCategory: string, offset: number, options: object) {
     super();
     this.opts = options;
     this.setInstanceProperties(options);
@@ -47,6 +51,7 @@ export default class ResumableFile extends ResumableEventHandler {
     this._size = file.size;
     this._relativePath = file.webkitRelativePath || this._fileName;
     this._uniqueIdentifier = uniqueIdentifier;
+    this._offset = offset;
     this._fileCategory = fileCategory;
     this._error = uniqueIdentifier !== undefined;
 
@@ -84,6 +89,10 @@ export default class ResumableFile extends ResumableEventHandler {
     return this._uniqueIdentifier;
   }
 
+  get offset(): number {
+    return this._offset;
+  }
+
   get fileCategory(): string {
     return this._fileCategory;
   }
@@ -115,8 +124,10 @@ export default class ResumableFile extends ResumableEventHandler {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Cancelling upload of ResumableFile...', this);
     for (const chunk of this._chunks) {
       if (chunk.status === ResumableChunkStatus.UPLOADING) {
+        const uploadTaskId = chunk.uploadTaskId;
         chunk.abort();
-        this.fire('chunkCancel', chunk);
+
+        this.fire('chunkCancel', uploadTaskId, chunk);
       }
     }
     // Reset this file to be void
@@ -156,19 +167,24 @@ export default class ResumableFile extends ResumableEventHandler {
       this.fire('fileRetry', this, message);
       Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkRetry" in ResumableFile.', this, chunk, message);
     }
-    const successHandler = (message, chunk) => {
+    const successHandler = (uploadTaskId, message, chunk) => {
       Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkSuccess" in ResumableFile...', this, chunk, message);
       if (this._error) return;
-      this.fire('chunkSuccess', chunk, message);
+      this.fire('chunkSuccess', uploadTaskId, chunk, message);
       this.fire('fileProgress', this, message);
-      if (this.isComplete) {
+
+      // To prevent iterating over all chunks every time any chunk is uploaded, we only check for completion when the
+      // last chunks are uploaded. As the chunks are processed in order, we can simply check their offset against the
+      // length of the chunks array to determine if we are at the end of the file. We have to consider the simultaneous
+      // uploads because it could happen that the last chunk is uploaded faster than e.g. the one before that.
+      if (chunk.offset >= this._chunks.length - this.simultaneousUploads && this.isComplete) {
         this.fire('fileSuccess', this, message);
       }
       Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkSuccess" in ResumableFile.', this, chunk, message);
     };
-    const errorHandler = (message, chunk) => {
+    const errorHandler = (uploadTaskId, message, chunk) => {
       Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkError" in ResumableFile...', this, chunk, message);
-      this.fire('chunkError', chunk, message);
+      this.fire('chunkError', uploadTaskId, chunk, message);
       this.abort();
       this._error = true;
       this._chunks = [];
@@ -185,8 +201,8 @@ export default class ResumableFile extends ResumableEventHandler {
     for (var offset = 0; offset < maxOffset; offset++) {
       const chunk = new ResumableChunk(this, offset, this.opts);
       chunk.on('chunkProgress', (message) => progressHandler(message, chunk));
-      chunk.on('chunkError', (message) => errorHandler(message, chunk));
-      chunk.on('chunkSuccess', (message) => successHandler(message, chunk));
+      chunk.on('chunkError', (uploadTaskId, message) => errorHandler(uploadTaskId, message, chunk));
+      chunk.on('chunkSuccess', (uploadTaskId, message) => successHandler(uploadTaskId, message, chunk));
       chunk.on('chunkRetry', (message) => retryHandler(message, chunk));
       this._chunks.push(chunk);
       this.fire('chunkingProgress', this, offset / maxOffset);
@@ -230,23 +246,32 @@ export default class ResumableFile extends ResumableEventHandler {
   }
 
   /**
-   * Initiate the upload of a new chunk for this file. This function returns whether a new upload was started or not.
+   * Initiate the upload of the chunk with the given index. Returns whether a new upload was started or not.
    */
-  upload(): boolean {
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Starting upload of next chunk of ResumableFile...', this);
+  uploadChunk(chunkIndex: number, uploadTaskId: UploadTaskId): boolean {
     if (this.isPaused) {
       return false;
     }
 
-    for (const chunk of this._chunks) {
-      if (chunk.status === ResumableChunkStatus.PENDING) {
-        chunk.send();
-        Helpers.printDebugLow(this.debugVerbosityLevel, 'Started upload of next chunk of ResumableFile.', this);
-        return true;
-      }
+    const chunk = this._chunks[chunkIndex];
+    if (chunk && chunk.status === ResumableChunkStatus.PENDING) {
+      chunk.send(uploadTaskId);
+
+      Helpers.printDebugLow(
+        this.debugVerbosityLevel,
+        'Started upload of chunk ' + chunkIndex + ' of ResumableFile.',
+        this
+      );
+
+      return true;
     }
 
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'No chunk found to upload for ResumableFile.', this);
+    Helpers.printDebugLow(
+      this.debugVerbosityLevel,
+      'Chunk with index ' + chunkIndex + ' not found, already uploaded or has permanent error.',
+      this
+    );
+
     return false;
   }
 

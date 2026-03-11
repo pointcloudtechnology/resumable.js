@@ -1,7 +1,8 @@
 import Helpers from './resumableHelpers';
 import ResumableEventHandler from './resumableEventHandler';
 import ResumableFile from './resumableFile';
-import {DebugVerbosityLevel, ResumableChunkStatus, ResumableConfiguration} from './types/types';
+import {DebugVerbosityLevel, ResumableChunkStatus, ResumableConfiguration, UploadTaskId} from './types/types';
+import {DefaultConfiguration} from './resumableDefaultValues';
 
 /*
 * MIT Licensed
@@ -25,7 +26,7 @@ export default class ResumableChunk extends ResumableEventHandler {
   private fileObj: ResumableFile;
   private fileObjSize: number;
   private fileObjType: string;
-  private offset: number;
+  private _offset: number;
   private lastProgressCallback: Date = new Date;
   private tested: boolean = false;
   private retries: number = 0;
@@ -35,39 +36,40 @@ export default class ResumableChunk extends ResumableEventHandler {
   private startByte: number;
   private endByte: number;
   private xhr: XMLHttpRequest = null;
+  private _uploadTaskId: UploadTaskId = null;
 
   // Option properties
-  private chunkSize: number = 1024 * 1024; // 1 MB
-  private fileParameterName: string = 'file';
-  private chunkNumberParameterName: string = 'resumableChunkNumber';
-  private chunkSizeParameterName: string = 'resumableChunkSize';
-  private currentChunkSizeParameterName: string = 'resumableCurrentChunkSize';
-  private totalSizeParameterName: string = 'resumableTotalSize';
-  private typeParameterName: string = 'resumableType';
-  private identifierParameterName: string = 'resumableIdentifier';
-  private fileCategoryParameterName: string = 'resumableFileCategory';
-  private fileNameParameterName: string = 'resumableFilename';
-  private relativePathParameterName: string = 'resumableRelativePath';
-  private totalChunksParameterName: string = 'resumableTotalChunks';
-  private throttleProgressCallbacks: number = 0.5;
-  private query: object = {};
-  private headers: object = {};
-  private method: string = 'multipart';
-  private uploadMethod: string = 'POST';
-  private testMethod: string = 'GET';
-  private parameterNamespace: string = '';
-  private testChunks: boolean = true;
-  private maxChunkRetries: number = 100;
-  private chunkRetryInterval?: number = undefined;
-  private permanentErrors: number[] = [400, 401, 403, 404, 409, 415, 500, 501];
-  private withCredentials: boolean = false;
-  private xhrTimeout: number = 0;
-  private chunkFormat: string = 'blob';
-  private setChunkTypeFromFile: boolean = false;
-  private target: string = '/';
-  private testTarget: string = '';
+  private chunkSize: number = DefaultConfiguration.chunkSize;
+  private fileParameterName: string = DefaultConfiguration.fileParameterName;
+  private chunkNumberParameterName: string = DefaultConfiguration.chunkNumberParameterName;
+  private chunkSizeParameterName: string = DefaultConfiguration.chunkSizeParameterName;
+  private currentChunkSizeParameterName: string = DefaultConfiguration.currentChunkSizeParameterName;
+  private totalSizeParameterName: string = DefaultConfiguration.totalSizeParameterName;
+  private typeParameterName: string = DefaultConfiguration.typeParameterName;
+  private identifierParameterName: string = DefaultConfiguration.identifierParameterName;
+  private fileCategoryParameterName: string = DefaultConfiguration.fileCategoryParameterName;
+  private fileNameParameterName: string = DefaultConfiguration.fileNameParameterName;
+  private relativePathParameterName: string = DefaultConfiguration.relativePathParameterName;
+  private totalChunksParameterName: string = DefaultConfiguration.totalChunksParameterName;
+  private throttleProgressCallbacks: number = DefaultConfiguration.throttleProgressCallbacks;
+  private query: object = DefaultConfiguration.query;
+  private headers: object = DefaultConfiguration.headers;
+  private method: string = DefaultConfiguration.method;
+  private uploadMethod: string = DefaultConfiguration.uploadMethod;
+  private testMethod: string = DefaultConfiguration.testMethod;
+  private parameterNamespace: string = DefaultConfiguration.parameterNamespace;
+  private testChunks: boolean = DefaultConfiguration.testChunks;
+  private maxChunkRetries: number = DefaultConfiguration.maxChunkRetries;
+  private chunkRetryInterval?: number = DefaultConfiguration.chunkRetryInterval;
+  private permanentErrors: number[] = DefaultConfiguration.permanentErrors;
+  private withCredentials: boolean = DefaultConfiguration.withCredentials;
+  private xhrTimeout: number = DefaultConfiguration.xhrTimeout;
+  private chunkFormat: string = DefaultConfiguration.chunkFormat;
+  private setChunkTypeFromFile: boolean = DefaultConfiguration.setChunkTypeFromFile;
+  private target: string = DefaultConfiguration.target;
+  private testTarget: string = DefaultConfiguration.testTarget;
 
-  private debugVerbosityLevel: DebugVerbosityLevel = DebugVerbosityLevel.NONE;
+  private debugVerbosityLevel: DebugVerbosityLevel = DefaultConfiguration.debugVerbosityLevel;
 
   constructor(fileObj: ResumableFile, offset: number, options: ResumableConfiguration) {
     super();
@@ -75,11 +77,11 @@ export default class ResumableChunk extends ResumableEventHandler {
     this.fileObj = fileObj;
     this.fileObjSize = fileObj.size;
     this.fileObjType = fileObj.file.type;
-    this.offset = offset;
+    this._offset = offset;
 
     // Computed properties
-    this.startByte = this.offset * this.chunkSize;
-    this.endByte = Math.min(this.fileObjSize, (this.offset + 1) * this.chunkSize);
+    this.startByte = this._offset * this.chunkSize;
+    this.endByte = Math.min(this.fileObjSize, (this._offset + 1) * this.chunkSize);
     this.xhr = null;
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Constructed ResumableChunk.', this);
   }
@@ -113,6 +115,18 @@ export default class ResumableChunk extends ResumableEventHandler {
   }
 
   /**
+   * Get the offset of this chunk in the ResumableFile. This is equivalent to the index in the ResumableFile's `chunks`
+   * array.
+   */
+  get offset(): number {
+    return this._offset;
+  }
+
+  get uploadTaskId(): UploadTaskId {
+    return this._uploadTaskId;
+  }
+
+  /**
    * Get query parameters for this chunk as an object, combined with custom parameters if provided
    */
   get formattedQuery(): object {
@@ -122,7 +136,7 @@ export default class ResumableChunk extends ResumableEventHandler {
     // Add extra data to identify chunk
     const extraData = {
       // define key/value pairs for additional parameters
-      [this.chunkNumberParameterName]: this.offset + 1,
+      [this.chunkNumberParameterName]: this._offset + 1,
       [this.chunkSizeParameterName]: this.chunkSize,
       [this.currentChunkSizeParameterName]: this.endByte - this.startByte,
       [this.totalSizeParameterName]: this.fileObjSize,
@@ -176,7 +190,7 @@ export default class ResumableChunk extends ResumableEventHandler {
   /**
    * Makes a GET request without any data to see if the chunk has already been uploaded in a previous session
    */
-  private test(): void {
+  private test(uploadTaskId: UploadTaskId): void {
     Helpers.printDebugHigh(this.debugVerbosityLevel, 'Sending test request for ResumableChunk...', this);
     // Set up request and listen for event
     this.xhr = new XMLHttpRequest();
@@ -186,9 +200,9 @@ export default class ResumableChunk extends ResumableEventHandler {
       this.tested = true;
       var status = this.status;
       if (status === ResumableChunkStatus.SUCCESS) {
-        this.fire('chunkSuccess', this.message());
+        this.fire('chunkSuccess', uploadTaskId, this.message());
       } else {
-        this.send();
+        this.send(uploadTaskId);
       }
       Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled test request response for ResumableChunk.', this);
     };
@@ -214,28 +228,38 @@ export default class ResumableChunk extends ResumableEventHandler {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Aborting upload of ResumableChunk...', this);
     if (this.xhr) this.xhr.abort();
     this.xhr = null;
+    this._uploadTaskId = null;
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Aborted upload of ResumableChunk.', this);
   }
 
   /**
    *  Uploads the actual data in a POST call
    */
-  send(): void {
+  send(uploadTaskId: UploadTaskId): void {
+    if (this._uploadTaskId) {
+      throw new Error('uploadTaskId was already set for ResumableChunk when calling send().');
+    }
+
     if (this.testChunks && !this.tested) {
       Helpers.printDebugLow(
         this.debugVerbosityLevel,
         'Testing upload status of ResumableChunk before uploading...',
         this
       );
-      this.test();
+
+      this.test(uploadTaskId);
+
       Helpers.printDebugLow(
         this.debugVerbosityLevel,
         'Tested upload status of ResumableChunk before uploading. Chunk already uploaded: '
           + (this.status === ResumableChunkStatus.SUCCESS ? 'yes' : 'no'),
         this
       );
+
       return;
     }
+
+    this._uploadTaskId = uploadTaskId;
 
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Starting upload of ResumableChunk...', this);
 
@@ -263,12 +287,12 @@ export default class ResumableChunk extends ResumableEventHandler {
       switch (status) {
         case ResumableChunkStatus.SUCCESS:
           Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkSuccess" in ResumableChunk...', this);
-          this.fire('chunkSuccess', this.message());
+          this.fire('chunkSuccess', uploadTaskId, this.message());
           Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkSuccess" in ResumableChunk.', this);
           break;
         case ResumableChunkStatus.ERROR:
           Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkError" in ResumableChunk...', this);
-          this.fire('chunkError', this.message());
+          this.fire('chunkError', uploadTaskId, this.message());
           Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkError" in ResumableChunk.', this);
           break;
         default:
@@ -279,9 +303,9 @@ export default class ResumableChunk extends ResumableEventHandler {
           let retryInterval = this.chunkRetryInterval;
           if (retryInterval !== undefined) {
             this.pendingRetry = true;
-            setTimeout(() => this.send(), retryInterval);
+            setTimeout(() => this.send(uploadTaskId), retryInterval);
           } else {
-            this.send();
+            this.send(uploadTaskId);
           }
           Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkRetry" in ResumableChunk.', this);
           break;

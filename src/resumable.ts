@@ -16,7 +16,8 @@
 import Helpers from './resumableHelpers';
 import ResumableFile from './resumableFile';
 import ResumableEventHandler from './resumableEventHandler';
-import {DebugVerbosityLevel, ExtendedFile, ResumableChunkStatus, ResumableConfiguration} from './types/types';
+import {DebugVerbosityLevel, ExtendedFile, ResumableConfiguration, UploadTask, UploadTaskId} from './types/types';
+import {DefaultConfiguration} from './resumableDefaultValues';
 
 /**
  * An instance of a resumable upload handler that contains one or multiple files which should be uploaded in chunks.
@@ -33,44 +34,64 @@ export class Resumable extends ResumableEventHandler {
    */
   private uncompletedFileCategories: string[] = [];
   private validators: {[fileType: string]: Function} = {};
+  private uploadTasks: Map<UploadTaskId, UploadTask> = new Map();
   private support: boolean;
+  /**
+   * When this is set, all upload tasks reached the end of the file list and no more chunks are left to upload.
+   * One task is currently iterating over all chunks once more to check if all of them really are uploaded.
+   * Only this task will perform any missing uploads.
+   */
+  private uploadTaskIdCurrentlyCheckingIfUploadFinished: UploadTaskId | undefined = undefined;
 
   // Configuration Options
-  private clearInput: boolean = true;
-  private dragOverClass: string = 'dragover';
-  private fileCategories: string[] = [];
-  private defaultFileCategory: string | null = 'default';
-  private fileTypes: string[] | {[fileCategory: string]: string[]} = [];
+  private clearInput: boolean = DefaultConfiguration.clearInput;
+  private dragOverClass: string = DefaultConfiguration.dragOverClass;
+  private fileCategories: string[] = DefaultConfiguration.fileCategories.slice();
+  private defaultFileCategory: string | null = DefaultConfiguration.defaultFileCategory;
+  private fileTypes: string[] | {[fileCategory: string]: string[]} = DefaultConfiguration.fileTypes;
   private fileTypeErrorCallback: Function = (file) => {
     alert(`${file.fileName || file.name} has an unsupported file type.`);
   };
-  private generateUniqueIdentifier: Function = null;
-  private maxFileSize?: number;
+  private generateUniqueIdentifier: Function = DefaultConfiguration.generateUniqueIdentifier;
+  private maxFileSize?: number = DefaultConfiguration.maxFileSize;
   private maxFileSizeErrorCallback: Function = (file) => {
     alert(file.fileName || file.name + ' is too large, please upload files less than ' +
       Helpers.formatSize(this.maxFileSize) + '.');
   };
-  private maxFiles?: number;
+  private maxFiles?: number = DefaultConfiguration.maxFiles;
   private maxFilesErrorCallback: Function = (files) => {
     var maxFiles = this.maxFiles;
     alert('Please upload no more than ' + maxFiles + ' file' + (maxFiles === 1 ? '' : 's') + ' at a time.');
   };
-  private minFileSize: number = 1;
+  private minFileSize: number = DefaultConfiguration.minFileSize;
   private minFileSizeErrorCallback: Function = (file) => {
     alert(file.fileName || file.name + ' is too small, please upload files larger than ' +
       Helpers.formatSize(this.minFileSize) + '.');
   };
-  private prioritizeFirstAndLastChunk: boolean = false;
   private fileValidationErrorCallback: Function = (file) => {};
-  private simultaneousUploads: number = 3;
+  private simultaneousUploads: number = DefaultConfiguration.simultaneousUploads;
 
-  private debugVerbosityLevel: DebugVerbosityLevel = DebugVerbosityLevel.NONE;
+  private debugVerbosityLevel: DebugVerbosityLevel = DefaultConfiguration.debugVerbosityLevel;
 
   constructor(options: ResumableConfiguration = {}) {
     super();
     this.setInstanceProperties(options);
     this.opts = options;
     this.checkSupport();
+
+    for (let i = 0; i < this.simultaneousUploads; i++) {
+      const uploadTaskId: UploadTaskId = `upload-task-${i}`;
+      this.uploadTasks.set(
+        uploadTaskId,
+        {
+          id: uploadTaskId,
+          fileCategoryIndex: undefined,
+          fileIndex: undefined,
+          chunkIndex: undefined,
+        },
+      );
+    }
+
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Constructed Resumable.', this);
   }
 
@@ -484,18 +505,24 @@ export class Resumable extends ResumableEventHandler {
 
     Helpers.printDebugHigh(this.debugVerbosityLevel,'Creating ResumableFiles for every file from file list...');
     for (const file of validatedFiles) {
-      let f = new ResumableFile(file, file.uniqueIdentifier, fileCategory, this.opts);
+      let f = new ResumableFile(
+        file,
+        file.uniqueIdentifier,
+        fileCategory,
+        this.files[fileCategory].length,
+        this.opts,
+      );
       f.on('chunkingStart', (...args) => this.handleChunkingStart(args, fileCategory));
       f.on('chunkingProgress', (...args) => this.handleChunkingProgress(args, fileCategory));
       f.on('chunkingComplete', (...args) => this.handleChunkingComplete(args, fileCategory));
-      f.on('chunkSuccess', (...args) => this.handleChunkSuccess(args, fileCategory));
-      f.on('chunkError', (...args) => this.handleChunkError(args, fileCategory));
-      f.on('chunkCancel', (...args) => this.handleChunkCancel(args, fileCategory));
+      f.on('chunkSuccess', (uploadTaskId, ...args) => this.handleChunkSuccess(args, uploadTaskId, fileCategory));
+      f.on('chunkError', (uploadTaskId, ...args) => this.handleChunkError(args, uploadTaskId, fileCategory));
+      f.on('chunkCancel', (uploadTaskId, ...args) => this.handleChunkCancel(args, uploadTaskId, fileCategory));
       f.on('chunkRetry', (...args) => this.handleChunkRetry(args, fileCategory));
       f.on('chunkProgress', (...args) => this.handleChunkProgress(args, fileCategory));
       f.on('fileProgress', (...args) => this.handleFileProgress(args, fileCategory));
       f.on('fileError', (...args) => this.handleFileError(args, fileCategory));
-      f.on('fileSuccess', (...args) => this.handleFileSuccess(args, fileCategory));
+      f.on('fileSuccess', (file, ...args) => this.handleFileSuccess(file, args, fileCategory));
       f.on('fileCancel', (...args) => this.handleFileCancel(args, fileCategory));
       f.on('fileRetry', (...args) => this.handleFileRetry(args, fileCategory));
       this.files[fileCategory].push(f);
@@ -529,34 +556,268 @@ export class Resumable extends ResumableEventHandler {
   /**
    * Queue a new chunk to be uploaded that is currently awaiting upload.
    */
-  private uploadNextChunk(): void {
-    Helpers.printDebugHigh(this.debugVerbosityLevel, 'Queueing next chunk upload...');
-    const allResumableFiles = this.getFilesOfAllCategories();
+  private uploadNextChunk(currentUploadTaskId: UploadTaskId): void {
+    if (this.uploadTaskIdCurrentlyCheckingIfUploadFinished !== undefined) {
+      if (this.uploadTaskIdCurrentlyCheckingIfUploadFinished === currentUploadTaskId) {
+        // The final check for upload completion is currently performed by this upload task. The next relevant chunk
+        // is found and uploaded by `finalCheckIfUploadFinished()`.
+        this.finalCheckIfUploadFinished(currentUploadTaskId);
+        return;
+      }
 
-    // In some cases (such as videos) it's really handy to upload the first
-    // and last chunk of a file quickly; this lets the server check the file's
-    // metadata and determine if there's even a point in continuing.
-    if (this.prioritizeFirstAndLastChunk) {
-      for (const file of allResumableFiles) {
-        if (file.chunks.length && file.chunks[0].status === ResumableChunkStatus.PENDING) {
-          file.chunks[0].send();
-          Helpers.printDebugHigh(this.debugVerbosityLevel, 'Queued upload of prioritized first chunk.', file);
-          return;
+      // The final check for upload completion is already running. No new chunks should be uploaded anymore via this
+      // function. This task can simply stop now.
+      return;
+    }
+
+    if (!this.uploadTasks.has(currentUploadTaskId)) {
+      throw new Error('Error while starting next chunk upload. Unknown upload task ID: ' + currentUploadTaskId);
+    }
+    const uploadTask = this.uploadTasks.get(currentUploadTaskId);
+
+    Helpers.printDebugHigh(
+      this.debugVerbosityLevel,
+      'Queueing next chunk upload for upload task ID ' + currentUploadTaskId + '...',
+    );
+
+    this.setNextAvailableChunkForUploadTask(uploadTask);
+
+    if (
+      uploadTask.fileCategoryIndex !== undefined
+      && uploadTask.fileIndex !== undefined
+      && uploadTask.chunkIndex !== undefined
+    ) {
+      Helpers.printDebugHigh(
+        this.debugVerbosityLevel,
+        'Found next chunk to upload for upload task ID ' + currentUploadTaskId + ': '
+          + 'file category index '+ uploadTask.fileCategoryIndex
+          + ', file index ' + uploadTask.fileIndex
+          + ', chunk index ' + uploadTask.chunkIndex + '.',
+      );
+
+      const file = this.files[this.fileCategories[uploadTask.fileCategoryIndex]][uploadTask.fileIndex];
+      if (file.uploadChunk(uploadTask.chunkIndex, currentUploadTaskId)) {
+        return;
+      }
+
+      // Something went wrong or the chunk was simply already uploading because another task picked it up.
+      // Just try to upload the next chunk.
+      this.uploadNextChunk(currentUploadTaskId);
+      return;
+    }
+
+    // Since no chunk was found, the last chunk was already finished.
+    // If the final check for upload completion is already running, this task can stop here.
+    // Otherwise, we start the final check further below.
+    if (this.uploadTaskIdCurrentlyCheckingIfUploadFinished !== undefined) {
+      this.resetUploadTask(uploadTask);
+      return;
+    }
+
+    // Only the last running upload task should start the final check for upload completion. Otherwise the final check
+    // might interfere with still running uploads.
+    let areAllTasksFinished = true;
+    for (const [uploadTaskId, uploadTask] of this.uploadTasks) {
+      if (
+        uploadTaskId !== currentUploadTaskId
+          && uploadTask.fileCategoryIndex !== undefined
+          && uploadTask.fileIndex !== undefined
+          && uploadTask.chunkIndex !== undefined
+      ) {
+        areAllTasksFinished = false;
+        break;
+      }
+    }
+
+    if (!areAllTasksFinished) {
+      Helpers.printDebugLow(
+        this.debugVerbosityLevel,
+        'No more chunks to upload for upload task ID ' + currentUploadTaskId + '. Waiting for other tasks to finish.',
+      );
+      return;
+    }
+
+    Helpers.printDebugLow(
+      this.debugVerbosityLevel,
+      'All upload tasks are finished with their last available uploads. Upload task ID '
+        + currentUploadTaskId
+        + ' will now check if all chunks are really uploaded.',
+    );
+
+    this.finalCheckIfUploadFinished(currentUploadTaskId);
+    return;
+}
+
+  private setNextAvailableChunkForUploadTask(uploadTask: UploadTask): void {
+    let fileCategoryIndex = -1;
+    let fileIndex = -1;
+    let chunkIndex = -1;
+
+    // Find the highest file category, file and chunk index that is currently set for any upload task.
+    for (const [_, task] of this.uploadTasks) {
+      if (task.fileCategoryIndex === undefined) {
+        continue;
+      }
+
+      if (task.fileCategoryIndex > fileCategoryIndex) {
+        fileCategoryIndex = task.fileCategoryIndex;
+        fileIndex = task.fileIndex;
+        chunkIndex = task.chunkIndex;
+      } else if (task.fileCategoryIndex === fileCategoryIndex) {
+        if (task.fileIndex > fileIndex) {
+          fileIndex = task.fileIndex;
+          chunkIndex = task.chunkIndex;
+        } else if (task.fileIndex === fileIndex) {
+          if (task.chunkIndex > chunkIndex) {
+            chunkIndex = task.chunkIndex;
+          }
         }
-        if (file.chunks.length > 1 && file.chunks[file.chunks.length - 1].status === ResumableChunkStatus.PENDING) {
-          file.chunks[file.chunks.length - 1].send();
-          Helpers.printDebugHigh(this.debugVerbosityLevel, 'Queued upload of prioritized last chunk.', file);
+      }
+    }
+
+    if (fileCategoryIndex === -1) {
+      fileCategoryIndex = undefined;
+      fileIndex = undefined;
+      chunkIndex = undefined;
+    }
+
+    uploadTask.fileCategoryIndex = fileCategoryIndex;
+    uploadTask.fileIndex = fileIndex;
+    uploadTask.chunkIndex = chunkIndex;
+    this.uploadTasks.set(uploadTask.id, uploadTask);
+
+    // When no chunk is currently uploading, the upload was probably just started, so we simply start with the first
+    // available chunk.
+    if (uploadTask.fileCategoryIndex === undefined) {
+      // Pass -1 to start searching in the first file category, because "next" is index 0 then.
+      fileCategoryIndex = this.findNextIndexOfFileCategoryWithFiles(-1);
+
+      // No file category with files found, so no chunk available.
+      if (fileCategoryIndex === undefined) {
+        this.resetUploadTask(uploadTask);
+        return;
+      }
+
+      fileIndex = 0;
+      chunkIndex = -1;
+    }
+
+    // The indices now all either point to the latest uploading chunk or to the first available file with `chunkIndex`
+    // set to -1. In both cases, we need to increase the chunk index to set it to the next relevant chunk.
+    chunkIndex++;
+
+    // Check if the chunk index is now out of bounds. This means the current file is finished and we have to move to the
+    // next file (and potentially the next file category as well).
+    if (chunkIndex >= this.files[this.fileCategories[fileCategoryIndex]][fileIndex].chunks.length) {
+      // Move to next file.
+      chunkIndex = 0;
+      fileIndex++;
+      if (fileIndex >= this.files[this.fileCategories[fileCategoryIndex]].length) {
+        // Move to next file category and make sure we select a file category that actually contains files.
+        fileIndex = 0;
+        fileCategoryIndex = this.findNextIndexOfFileCategoryWithFiles(fileCategoryIndex);
+
+        if (fileCategoryIndex === undefined) {
+          // No more file categories with files found, so no more chunks available.
+          this.resetUploadTask(uploadTask);
           return;
         }
       }
     }
 
-    // Now, simply look for the next best thing to upload
-    for (const file of allResumableFiles) {
-      if (file.upload()) {
-        Helpers.printDebugHigh(this.debugVerbosityLevel, 'Queued upload of next chunk.', file);
+    uploadTask.fileCategoryIndex = fileCategoryIndex;
+    uploadTask.fileIndex = fileIndex;
+    uploadTask.chunkIndex = chunkIndex;
+    this.uploadTasks.set(uploadTask.id, uploadTask);
+  }
+
+  private findNextIndexOfFileCategoryWithFiles(currentFileCategoryIndex: number): number | undefined {
+    let fileCategoryIndex = currentFileCategoryIndex + 1;
+
+    while (
+      fileCategoryIndex < this.fileCategories.length
+        && this.files[this.fileCategories[fileCategoryIndex]].length === 0
+    ) {
+      fileCategoryIndex++;
+    }
+
+    // All remaining file categories are empty. No applicable file category found.
+    if (fileCategoryIndex >= this.fileCategories.length) {
+      return undefined;
+    }
+
+    return fileCategoryIndex;
+  }
+
+  private resetUploadTask(uploadTask: UploadTask): void {
+    uploadTask.fileCategoryIndex = undefined;
+    uploadTask.fileIndex = undefined;
+    uploadTask.chunkIndex = undefined;
+    this.uploadTasks.set(uploadTask.id, uploadTask);
+  }
+
+  private finalCheckIfUploadFinished(uploadTaskId: UploadTaskId): void {
+    if (
+      this.uploadTaskIdCurrentlyCheckingIfUploadFinished !== undefined
+        && this.uploadTaskIdCurrentlyCheckingIfUploadFinished !== uploadTaskId
+    ) {
+      throw new Error('There\'s already another upload task checking if the upload is finished.');
+    }
+
+    // Initially we reset all upload tasks to make sure no other task is interfering with the final check.
+    if (this.uploadTaskIdCurrentlyCheckingIfUploadFinished === undefined) {
+      for (const [, task] of this.uploadTasks) {
+        this.resetUploadTask(task);
+      }
+
+      this.uploadTaskIdCurrentlyCheckingIfUploadFinished = uploadTaskId;
+    }
+
+    const uploadTask = this.uploadTasks.get(this.uploadTaskIdCurrentlyCheckingIfUploadFinished);
+
+    while (
+      uploadTask.fileCategoryIndex === undefined
+        || (
+          uploadTask.fileCategoryIndex < this.fileCategories.length
+          && uploadTask.fileIndex < this.files[this.fileCategories[uploadTask.fileCategoryIndex]].length
+          && uploadTask.chunkIndex < this.files[this.fileCategories[uploadTask.fileCategoryIndex]][uploadTask.fileIndex].chunks.length
+        )
+    ) {
+      this.setNextAvailableChunkForUploadTask(uploadTask);
+
+      if (uploadTask.fileCategoryIndex === undefined) {
+        Helpers.printDebugLow(
+          this.debugVerbosityLevel,
+          'Final check by upload task ID '
+            + this.uploadTaskIdCurrentlyCheckingIfUploadFinished
+            + ' determined that all chunks have been uploaded.',
+        );
+        this.fire('complete');
         return;
       }
+
+      Helpers.printDebugHigh(
+        this.debugVerbosityLevel,
+        'Performing final check by upload task ID '
+          + this.uploadTaskIdCurrentlyCheckingIfUploadFinished
+          + ' for chunk with index ' + uploadTask.chunkIndex
+          + ' of file with index ' + uploadTask.fileIndex
+          + ' of file category with index ' + uploadTask.fileCategoryIndex + '.',
+      );
+
+      const file = this.files[this.fileCategories[uploadTask.fileCategoryIndex]][uploadTask.fileIndex];
+      if (file.isComplete) {
+        // Set chunk index to last chunk, so that the next iteration will automatically move to the next file.
+        uploadTask.chunkIndex = file.chunks.length - 1;
+        this.uploadTasks.set(this.uploadTaskIdCurrentlyCheckingIfUploadFinished, uploadTask);
+        continue;
+      }
+
+      file.uploadChunk(uploadTask.chunkIndex, this.uploadTaskIdCurrentlyCheckingIfUploadFinished);
+
+      // Return here, because we only want to upload one chunk at a time. This function will be called again, once this
+      // chunk is finished.
+      return;
     }
   }
 
@@ -747,24 +1008,28 @@ export class Resumable extends ResumableEventHandler {
    */
   upload(): void {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Starting Upload...');
-    // Make sure we don't start too many uploads at once
+
     if (this.isUploading) {
       Helpers.printDebugLow(this.debugVerbosityLevel, 'Already uploading. Not starting again.');
       return;
     }
-    // Kick off the queue
+
     this.fire('uploadStart');
-    for (let num = 1;num <= this.simultaneousUploads;num++) {
+
+    for (const [uploadTaskId] of this.uploadTasks) {
       Helpers.printDebugHigh(
         this.debugVerbosityLevel,
-        'Starting simultaneous upload ' + num + ' / ' + this.simultaneousUploads + '...',
+        'Starting upload for upload task "' + uploadTaskId + '"...',
       );
-      this.uploadNextChunk();
+
+      this.uploadNextChunk(uploadTaskId);
+
       Helpers.printDebugHigh(
         this.debugVerbosityLevel,
-        'Started simultaneous upload ' + num + ' / ' + this.simultaneousUploads + '...',
+        'Started upload for upload task "' + uploadTaskId + '".',
       );
     }
+
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Started Upload.');
   }
 
@@ -900,40 +1165,28 @@ export class Resumable extends ResumableEventHandler {
   }
 
   /**
-   * Check whether the upload is completed (if all files of a category are uploaded and if all files in general are
-   * uploaded).
+   * Check whether the upload of the given file category is completed.
    */
-  private checkUploadComplete(): void {
-    Helpers.printDebugHigh(this.debugVerbosityLevel, 'Checking for upload completion...');
+  private checkFileCategoryUploadComplete(fileCategory: string): void {
+    Helpers.printDebugHigh(
+      this.debugVerbosityLevel,
+      'Checking for upload completion of file category "' + fileCategory + '"...',
+    );
     // If no files were added, there is no upload that could be complete.
-    if (this.getFilesOfAllCategories().length === 0) {
+    if (this.files[fileCategory].length === 0) {
       return;
     }
 
-    const stillUncompletedFileCategories = [];
-    this.uncompletedFileCategories.forEach((fileCategory) => {
-      // If category is empty, no upload will happen, so no "complete" event needs to be fired.
-      if (this.files[fileCategory].length == 0) {
-        return;
-      }
+    const isUploadComplete = this.files[fileCategory].every((file) => file.isComplete);
 
-      if (this.files[fileCategory].every((file) => file.isComplete)) {
-        this.fire('categoryComplete', fileCategory);
-      } else {
-        stillUncompletedFileCategories.push(fileCategory);
-      }
-    });
-
-    this.uncompletedFileCategories = stillUncompletedFileCategories;
-
-    if (this.uncompletedFileCategories.length === 0) {
-      // All chunks have been uploaded, complete
-      this.fire('complete');
+    if (isUploadComplete) {
+      this.fire('categoryComplete', fileCategory);
     }
 
     Helpers.printDebugHigh(
       this.debugVerbosityLevel,
-      'Checked for upload completion. Upload completed: ' + (this.uncompletedFileCategories.length ? 'no' : 'yes')
+      'Checked for upload completion of file category "' + fileCategory + '". Upload completed: '
+        + (isUploadComplete ? 'no' : 'yes')
     );
   }
 
@@ -971,30 +1224,30 @@ export class Resumable extends ResumableEventHandler {
   /**
    * The event handler when a chunk was uploaded successfully
    */
-  private handleChunkSuccess(args: any[], fileCategory: string): void {
+  private handleChunkSuccess(args: any[], uploadTaskId: UploadTaskId, fileCategory: string): void {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkSuccess" in main resumable object...', args);
     this.fire('chunkSuccess', ...args, fileCategory);
-    this.uploadNextChunk();
+    this.uploadNextChunk(uploadTaskId);
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkSuccess" in main resumable object.', args);
   }
 
   /**
    * The event handler when an error happened while uploading a chunk
    */
-  private handleChunkError(args: any[], fileCategory: string): void {
+  private handleChunkError(args: any[], uploadTaskId: UploadTaskId, fileCategory: string): void {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkError" in main resumable object...', args);
     this.fire('chunkError', ...args, fileCategory);
-    this.uploadNextChunk();
+    this.uploadNextChunk(uploadTaskId);
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkError" in main resumable object.', args);
   }
 
   /**
    * The event handler when an the upload of a chunk was canceled
    */
-  private handleChunkCancel(args: any[], fileCategory: string): void {
+  private handleChunkCancel(args: any[], uploadTaskId: UploadTaskId, fileCategory: string): void {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkCancel" in main resumable object...', args);
     this.fire('chunkCancel', ...args, fileCategory);
-    this.uploadNextChunk();
+    this.uploadNextChunk(uploadTaskId);
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkCancel" in main resumable object.', args);
   }
 
@@ -1031,10 +1284,18 @@ export class Resumable extends ResumableEventHandler {
   /**
    * The event handler when all chunks from a file were uploaded successfully
    */
-  private handleFileSuccess(args: any[], fileCategory: string): void {
+  private handleFileSuccess(file: ResumableFile, args: any[], fileCategory: string): void {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Handling "fileSuccess" in main resumable object...', args);
-    this.fire('fileSuccess', ...args, fileCategory);
-    this.checkUploadComplete();
+    this.fire('fileSuccess', file, ...args, fileCategory);
+
+    // To prevent iterating over all files every time any file is uploaded, we only check for completion of the
+    // category when the last files are uploaded. As the files are processed in order, we can simply check their offset
+    // against the length of the files array to determine if we are at the end of the category. We have to consider the
+    // simultaneous uploads because it could happen that the last file is uploaded faster than e.g. the one before that.
+    if (file.offset >= this.files[fileCategory].length - this.simultaneousUploads) {
+      this.checkFileCategoryUploadComplete(fileCategory);
+    }
+
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Handled "fileSuccess" in main resumable object.', args);
   }
 
@@ -1058,12 +1319,14 @@ export class Resumable extends ResumableEventHandler {
   }
 
   /**
-   * The event handler, when the retry of a file was initiated
+   * The event handler, when the retry of a file was initiated.
+   * This event handler only re-fires the event to the calling code (outside resumable). The event is only used as a
+   * notification. The handler does not perform any retries of the upload itself. This is already handled by the chunk
+   * retry handling which always occurs before a `fileRetry` event is fired.
    */
   private handleFileRetry(args: any[], fileCategory: string): void {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Handling "fileRetry" in main resumable object...', args);
     this.fire('fileRetry', ...args, fileCategory);
-    this.upload();
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Handled "fileRetry" in main resumable object.', args);
   }
 }

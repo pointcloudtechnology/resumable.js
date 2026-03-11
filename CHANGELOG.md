@@ -6,18 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### BREAKING
+* The option `prioritizeFirstAndLastChunks` was removed with #46
+  * If you rely on this option, you unfortunately have to stay on an older version for now. We also are happy to get a PR that brings it back based on the current code architecture.
 
 ### Added
 
 ### Fixed
-Add `undefined` as a possible return type for function based on `find` (#45)
+* Add `undefined` as a possible return type for function based on `find` (#45)
 
 ### Changed
+* Make upload of many files more efficient and robust (#46)
 
 ### Removed
+* Remove `prioritizeFirstAndLastChunks` option (#46)
 
 ## [4.0.3]
-Fix broken npm package release (no changes since v4.0.2)
+* Fix broken npm package release (no changes since v4.0.2)
 
 ## [4.0.2]
 ### Fixed

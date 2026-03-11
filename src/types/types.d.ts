@@ -18,77 +18,90 @@ declare const enum DebugVerbosityLevel {
   HIGH = 2,
 }
 
+declare type UploadTaskId = `upload-task-${number}`;
+
+declare interface UploadTask {
+  /** The unique ID of the upload task. */
+  id: UploadTaskId;
+  /** The index of the category in the file categories array that this process is currently uploading. */
+  fileCategoryIndex: number | undefined;
+  /** The index of the file in the current file category that this process is currently uploading. */
+  fileIndex: number | undefined;
+  /** The index of the chunk in the current file that this process is currently uploading. */
+  chunkIndex: number | undefined;
+}
+
 declare interface ResumableConfiguration {
   /**
-   * The target URL for the multipart POST request. This can be a string or a function that allows you to construct and return a value, based on supplied params. (Default: /)
+   * The target URL for the multipart POST request. This can be a string or a function that allows you to construct and return a value, based on supplied params. (Default: '/')
    **/
   target?: string;
   /**
-   * The size in bytes of each uploaded chunk of data. The last uploaded chunk will be at least this size and up to two the size, see Issue #51 for details and reasons. (Default: 1*1024*1024)
+   * The size in bytes of each uploaded chunk of data. The last uploaded chunk will be at least this size and up to two the size, see Issue #51 for details and reasons. (Default: 1024*1024)
    **/
   chunkSize?: number;
   /**
-   * Whether the value of the HTML element should be cleared after adding new files
+   * Whether the value of the HTML element should be cleared after adding new files. (Default: false)
    */
-  clearInput ?: boolean;
+  clearInput?: boolean;
   /**
-   * The class name to add on drag over an assigned drop zone. (Default: `dragover`)
+   * The class name to add on drag over an assigned drop zone. (Default: 'dragover')
    */
   dragOverClass?: string;
   /**
-   * Number of simultaneous uploads (Default: 3)
+   * Number of simultaneous uploads. (Default: 3)
    **/
   simultaneousUploads?: number;
   /**
-   * The name of the multipart POST parameter to use for the file chunk (Default: file)
+   * The name of the multipart POST parameter to use for the file chunk. (Default: 'file')
    **/
   fileParameterName?: string;
   /**
-   * The name of the chunk index (base-1) in the current upload POST parameter to use for the file chunk (Default: resumableChunkNumber)
+   * The name of the chunk index (base-1) in the current upload POST parameter to use for the file chunk. (Default: 'resumableChunkNumber')
    */
   chunkNumberParameterName?: string;
   /**
-   * The name of the total number of chunks POST parameter to use for the file chunk (Default: resumableTotalChunks)
+   * The name of the total number of chunks POST parameter to use for the file chunk. (Default: 'resumableTotalChunks')
    */
   totalChunksParameterName?: string;
   /**
-   * The time in milliseconds that defines the minimum time span between two progress callbacks
+   * The time in milliseconds that defines the minimum time span between two progress callbacks. (Default: 0.5)
    */
   throttleProgressCallbacks?: number;
   /**
-   * The name of the general chunk size POST parameter to use for the file chunk (Default: resumableChunkSize)
+   * The name of the general chunk size POST parameter to use for the file chunk. (Default: 'resumableChunkSize')
    */
   chunkSizeParameterName?: string;
   /**
-   * The name of the total file size number POST parameter to use for the file chunk (Default: resumableTotalSize)
+   * The name of the total file size number POST parameter to use for the file chunk. (Default: 'resumableTotalSize')
    */
   totalSizeParameterName?: string;
   /**
-   * The name of the unique identifier POST parameter to use for the file chunk (Default: resumableIdentifier)
+   * The name of the unique identifier POST parameter to use for the file chunk. (Default: 'resumableIdentifier')
    */
   identifierParameterName?: string;
   /**
-   * The name of the file category POST parameter to use for the file chunk (Default: resumableFileCategory)
+   * The name of the file category POST parameter to use for the file chunk. (Default: 'resumableFileCategory')
    */
   fileCategoryParameterName?: string;
   /**
-   * The name of the original file name POST parameter to use for the file chunk (Default: resumableFilename)
+   * The name of the original file name POST parameter to use for the file chunk. (Default: 'resumableFilename')
    */
   fileNameParameterName?: string;
   /**
-   * The name of the file's relative path POST parameter to use for the file chunk (Default: resumableRelativePath)
+   * The name of the file's relative path POST parameter to use for the file chunk. (Default: 'resumableRelativePath')
    */
   relativePathParameterName?: string;
   /**
-   * The name of the current chunk size POST parameter to use for the file chunk (Default: resumableCurrentChunkSize)
+   * The name of the current chunk size POST parameter to use for the file chunk. (Default: 'resumableCurrentChunkSize')
    */
   currentChunkSizeParameterName?: string;
   /**
-   * The name of the file type POST parameter to use for the file chunk (Default: resumableType)
+   * The name of the file type POST parameter to use for the file chunk. (Default: 'resumableType')
    */
   typeParameterName?: string;
   /**
-   * Extra parameters to include in the multipart POST with data. This can be an object or a function. If a function, it will be passed a ResumableFile and a ResumableChunk object (Default: {})
+   * Extra parameters to include in the multipart POST with data. This can be an object or a function. If a function, it will be passed a ResumableFile and a ResumableChunk object. (Default: {})
    **/
   query?: Object;
   /**
@@ -108,13 +121,9 @@ declare interface ResumableConfiguration {
    **/
   headers?: Object | ((file: ResumableFile) => Object);
   /**
-   * Method to use when POSTing chunks to the server (multipart or octet) (Default: multipart)
+   * Method to use when POSTing chunks to the server ('multipart' or 'octet'). (Default: 'multipart')
    **/
   method?: string;
-  /**
-   * Prioritize first and last chunks of all files. This can be handy if you can determine if a file is valid for your service from only the first or last chunk. For example, photo or video meta data is usually located in the first part of a file, making it easy to test support from only the first chunk. (Default: false)
-   **/
-  prioritizeFirstAndLastChunk?: boolean;
   /**
    * Make a GET request to the server for each chunks to see if it already exists. If implemented on the server-side, this will allow for upload resumes even after a browser crash or even a computer restart. (Default: true)
    **/
@@ -128,11 +137,11 @@ declare interface ResumableConfiguration {
    **/
   maxFiles?: number;
   /**
-   * A function which displays the please upload n file(s) at a time message. (Default: displays an alert box with the message Please n one file(s) at a time.)
+   * A function which displays the please upload n file(s) at a time message. (Default: displays an alert box with the message "Please upload no more than n files at a time.")
    **/
   maxFilesErrorCallback?: (files: ResumableFile) => void;
   /**
-   * The minimum allowed file size. (Default: undefined)
+   * The minimum allowed file size. (Default: 1)
    **/
   minFileSize?: number;
   /**
@@ -163,7 +172,7 @@ declare interface ResumableConfiguration {
   defaultFileCategory?: string | null;
   /**
    * The file types allowed to upload.
-   * If this is an array, the file types are used for all defined file catgories.
+   * If this is an array, the file types are used for all defined file categories.
    * Otherwise this needs to be an object, with an entry for every file category (category name as key, array of allowed
    * file types as value).
    * An empty array (either in the object of standalone) allows for any file type.
@@ -175,7 +184,7 @@ declare interface ResumableConfiguration {
    **/
   fileTypeErrorCallback?: (file: ResumableFile) => void;
   /**
-   * A function which displays an error when the validator for a given file has failed
+   * A function which displays an error when the validator for a given file has failed. (Default: Nothing is displayed.)
    * @param file
    */
   fileValidationErrorCallback?: (file: ResumableFile) => void;
@@ -188,7 +197,7 @@ declare interface ResumableConfiguration {
    **/
   chunkRetryInterval?: number;
   /**
-   * A list of HTTP errors that should be interpreted as failed requests
+   * A list of HTTP errors that should be interpreted as failed requests. (Default: [400, 401, 403, 404, 409, 415, 500, 501])
    */
   permanentErrors?: number[];
   /**
@@ -196,19 +205,19 @@ declare interface ResumableConfiguration {
    **/
   withCredentials?: boolean;
   /**
-   * The timeout in milliseconds for each request (Default: `0`)
+   * The timeout in milliseconds for each request. (Default: `0`)
    */
   xhrTimeout?: number;
   /**
-   * The format of the chunk (Either Blob or base64)
+   * The format of the chunk (Either 'blob' or 'base64'). (Default: 'blob')
    */
   chunkFormat?: string;
   /**
-   * Whether or not the chunk content-type should be derived from original file.type.
+   * Whether or not the chunk content-type should be derived from original file type. (Default: false)
    */
   setChunkTypeFromFile?: boolean;
   /**
-   * The target URL for the GET request to the server for each chunk to see if it already exists.
+   * The target URL for the GET request to the server for each chunk to see if it already exists. (Default: '')
    */
   testTarget?: string;
   /**

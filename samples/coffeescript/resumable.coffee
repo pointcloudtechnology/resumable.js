@@ -25,7 +25,6 @@ window.Resumable = class Resumable
       headers: {}
       preprocess: null
       method: 'multipart'
-      prioritizeFirstAndLastChunk: false
       target: '/'
       testChunks: true
       generateUniqueIdentifier: null
@@ -149,23 +148,7 @@ window.Resumable = class Resumable
     console.log "uploadNextChunk"
 
     found = false
-    # In some cases (such as videos) it's really handy to upload the first
-    # and last chunk of a file quickly; this let's the server check the file's
-    # metadata and determine if there's even a point in continuing.
-    if @getOpt 'prioritizeFirstAndLastChunk'
-      for file in @files
-        if file.chunks.length and file.chunks[0].status() is 'pending' and file.chunks[0].preprocessState is 0
-          file.chunks[0].send()
-          found = true
-          break
 
-        if file.chunks.length > 1 and file.chunks[file.chunks.length - 1].status() is 'pending' and file.chunks[file.chunks.length - 1].preprocessState is 0
-          file.chunks[file.chunks.length - 1].send()
-          found = true
-          break
-      return true if found
-
-    # Now, simply look for the next, best thing to upload
     for file in @files
       for chunk in file.chunks
         if chunk.status() is 'pending' and chunk.preprocessState is 0
@@ -200,7 +183,7 @@ window.Resumable = class Resumable
     for dn in domNodes
       if dn.tagName is 'INPUT' and dn.type is 'file'
         input = dn
-      else 
+      else
         input = document.createElement('input')
         input.setAttribute('type', 'file')
         #Place <input /> with the dom node an position the input to fill the entire space

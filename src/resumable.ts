@@ -29,10 +29,6 @@ export class Resumable extends ResumableEventHandler {
    * all ResumableFiles of that category that were added to this instance.
    */
   private files: {[key: string]: ResumableFile[]} = {};
-  /**
-   * Contains all file categories for which the upload was not yet completed.
-   */
-  private uncompletedFileCategories: string[] = [];
   private validators: {[fileType: string]: Function} = {};
   private uploadTasks: Map<UploadTaskId, UploadTask> = new Map();
   private support: boolean;
@@ -140,7 +136,6 @@ export class Resumable extends ResumableEventHandler {
       }
 
       this.files[fileCategory] = [];
-      this.uncompletedFileCategories.push(fileCategory);
       deduplicatedFileCategories.push(fileCategory);
     });
 

@@ -5,11 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+
+### Fixed
+
+### Changed
+
+### Removed
+
+## [5.0.0]
 ### BREAKING
 * The option `prioritizeFirstAndLastChunks` was removed with #46
   * If you rely on this option, you unfortunately have to stay on an older version for now. We also are happy to get a PR that brings it back based on the current code architecture.
-
-### Added
 
 ### Fixed
 * Add `undefined` as a possible return type for function based on `find` (#45)

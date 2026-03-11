@@ -1042,7 +1042,7 @@ export class Resumable extends ResumableEventHandler {
   };
 
   /**
-   * Cancel uploading and reset all files to their initial states
+   * Cancel upload and remove all files from the file list.
    */
   cancel(): void {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Cancelling Upload...');
@@ -1050,6 +1050,10 @@ export class Resumable extends ResumableEventHandler {
     const allFiles = this.getFilesOfAllCategories();
     allFiles.forEach((file) => {
       file.cancel();
+    });
+
+    this.fileCategories.forEach((fileCategory) => {
+      this.files[fileCategory] = [];
     });
 
     this.fire('cancel');

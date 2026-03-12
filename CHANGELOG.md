@@ -5,9 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### BREAKING
+When an upload is cancelled, the file list is now completely removed. This was always explained like this in the readme, but the code didn't do it.
+So this is technically a small bug fix, but for anyone who relied on the previous behavior, it's a breaking change.
+
 ### Added
 
 ### Fixed
+Fix cancellation of uploads (#48)
 
 ### Changed
 

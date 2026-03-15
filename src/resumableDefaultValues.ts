@@ -23,6 +23,8 @@ export const DefaultConfiguration: ResumableConfiguration = {
   relativePathParameterName: 'resumableRelativePath',
   currentChunkSizeParameterName: 'resumableCurrentChunkSize',
   typeParameterName: 'resumableType',
+  debugUploadTaskIdParameterName: 'resumableDebugUploadTaskId',
+  debugIsFinalCheckParameterName: 'resumableDebugIsFinalCheck',
   query: {},
   testMethod: 'GET',
   uploadMethod: 'POST',
@@ -51,4 +53,5 @@ export const DefaultConfiguration: ResumableConfiguration = {
   setChunkTypeFromFile: false,
   testTarget: '',
   debugVerbosityLevel: DebugVerbosityLevel.NONE,
+  includeDebugRequestParameters: false,
 }

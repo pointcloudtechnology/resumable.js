@@ -137,6 +137,8 @@ Available configuration options are:
 * `relativePathParameterName` The name of the file's relative path request parameter to use for the file chunk (Default: `'resumableRelativePath'`)
 * `currentChunkSizeParameterName` The name of the current chunk size request parameter to use for the file chunk (Default: `'resumableCurrentChunkSize'`)
 * `typeParameterName` The name of the file type request parameter to use for the file chunk (Default: `'resumableType'`)
+* `debugUploadTaskIdParameterName` The name of the request parameter to use for upload task id (only included when `includeDebugRequestParameters` is `true`). (Default: `'resumableDebugUploadTaskId'`)
+* `debugIsFinalCheckParameterName` The name of the request parameter that is set when the request is part of the final check (only included when `includeDebugRequestParameters` is `true`). (Default: `'resumableDebugIsFinalCheck'`)
 * `query` Extra parameters to include in the multipart request with data. This can be an object or a function. If a function, it will be passed a ResumableFile and a ResumableChunk object (Default: `{}`)
 * `testMethod` Method for chunk test request. (Default: `'GET'`)
 * `uploadMethod` HTTP method to use when sending chunks to the server (`POST`, `PUT`, `PATCH`) (Default: `'POST'`)
@@ -171,8 +173,8 @@ adding the file. (Default: `null`)
   - `DebugVerbosityLevel.NONE (0)` No debug output
   - `DebugVerbosityLevel.LOW (1)` Only main steps are logged (e.g. upload of a chunk is started/finished)
   - `DebugVerbosityLevel.HIGH (2)` Additional logging between main steps is done (e.g. XMLHttpRequest for chunk upload created)
-
   Default is `DebugVerbosityLevel.NONE` (no debug logging at all).
+* `includeDebugRequestParameters` If `true` every request to the server might contain additional request parameters that can be used for debugging, like the ID of the upload task that sent the request. (Default: `false`)
 
 #### Properties (readonly)
 * `.isUploading` Is `true` when the instance is uploading (as long as at least one chunk of any file is currently uploading). `false` otherwise.

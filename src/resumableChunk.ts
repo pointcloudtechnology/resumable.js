@@ -174,7 +174,7 @@ export default class ResumableChunk extends ResumableEventHandler {
       return ResumableChunkStatus.UPLOADING;
     } else if (this.isMarkedComplete) {
       return ResumableChunkStatus.SUCCESS;
-    } else if (!this.xhr) {
+    } else if (!this.xhr || (this.tested && this.xhr.status === 204)) {
       return ResumableChunkStatus.PENDING;
     } else if (this.xhr.readyState < 4) {
       // Status is really 'OPENED', 'HEADERS_RECEIVED' or 'LOADING' - meaning that stuff is happening

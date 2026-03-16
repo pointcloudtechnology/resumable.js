@@ -184,10 +184,9 @@ export default class ResumableFile extends ResumableEventHandler {
     };
     const errorHandler = (uploadTaskId, message, chunk) => {
       Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handling "chunkError" in ResumableFile...', this, chunk, message);
-      this.fire('chunkError', uploadTaskId, chunk, message);
-      this.abort();
       this._error = true;
-      this._chunks = [];
+      this.abort();
+      this.fire('chunkError', uploadTaskId, chunk, message);
       this.fire('fileError', this, message);
       Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkError" in ResumableFile.', this, chunk, message);
     }
@@ -226,6 +225,10 @@ export default class ResumableFile extends ResumableEventHandler {
     return ret;
   }
 
+  resetError(): void {
+    this._error = false;
+  }
+
   /**
    * Check whether at least one of this file's chunks is currently uploading
    */
@@ -240,6 +243,10 @@ export default class ResumableFile extends ResumableEventHandler {
   get isComplete(): boolean {
     return !this._chunks.some((chunk) =>
       chunk.status === ResumableChunkStatus.PENDING || chunk.status === ResumableChunkStatus.UPLOADING);
+  }
+
+  get hasError(): boolean {
+    return this._error;
   }
 
   /**

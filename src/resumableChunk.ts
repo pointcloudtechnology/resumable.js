@@ -246,6 +246,10 @@ export default class ResumableChunk extends ResumableEventHandler {
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Aborted upload of ResumableChunk.', this);
   }
 
+  resetRetriesCount(): void {
+    this.retries = 0;
+  }
+
   /**
    *  Uploads the actual data in a POST call
    */

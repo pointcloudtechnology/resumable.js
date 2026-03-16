@@ -786,6 +786,25 @@ export class Resumable extends ResumableEventHandler {
       this.setNextAvailableChunkForUploadTask(uploadTask);
 
       if (uploadTask.fileCategoryIndex === undefined) {
+        // The final check might have tried to upload chunks that had an error before. In case they still have errors
+        // the upload finally failed and can't be recovered.
+        for (const fileCategory of this.fileCategories) {
+          for (const file of this.files[fileCategory]) {
+            if (file.hasError) {
+              this.fire('failed');
+
+              Helpers.printDebugLow(
+                this.debugVerbosityLevel,
+                'Final check by upload task ID '
+                  + this.uploadTaskIdCurrentlyCheckingIfUploadFinished
+                  + ' is finished, but at least one file still have upload errors. Upload can\'t be completed.',
+              );
+
+              return;
+            }
+          }
+        }
+
         Helpers.printDebugLow(
           this.debugVerbosityLevel,
           'Final check by upload task ID '

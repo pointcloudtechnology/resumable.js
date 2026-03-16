@@ -215,15 +215,12 @@ export default class ResumableFile extends ResumableEventHandler {
    * Get the progress for uploading this file based on the progress of the individual file chunks
    */
   progress(): number {
-    if (this._error) return 1;
     // Sum up progress across everything
     var ret = 0;
-    var error = false;
     for (const chunk of this._chunks) {
-      if (chunk.status === ResumableChunkStatus.ERROR) error = true;
       ret += chunk.progress(true); // get chunk progress relative to entire file
     }
-    ret = error ? 1 : (ret > 0.99999 ? 1 : ret);
+    ret = ret > 0.99999 ? 1 : ret;
     ret = Math.max(this._prevProgress, ret); // We don't want to lose percentages when an upload is paused
     this._prevProgress = ret;
     return ret;

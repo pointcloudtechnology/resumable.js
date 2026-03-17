@@ -46,6 +46,7 @@ export const DefaultConfiguration: ResumableConfiguration = {
   fileValidationErrorCallback: () => {},
   maxChunkRetries: 100,
   chunkRetryInterval: undefined,
+  chunkStuckTimeout: undefined,
   permanentErrors: [400, 401, 403, 404, 409, 415, 500, 501],
   withCredentials: false,
   xhrTimeout: 0,

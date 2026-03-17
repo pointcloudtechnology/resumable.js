@@ -126,6 +126,13 @@ export default class ResumableChunk extends ResumableEventHandler {
     return this._offset;
   }
 
+  /**
+   * Get the offset of the file that this chunk belongs to in the corresponding file category.
+   */
+  get fileOffset(): number {
+    return this.fileObj.offset;
+  }
+
   get uploadTaskId(): UploadTaskId {
     return this._uploadTaskId;
   }

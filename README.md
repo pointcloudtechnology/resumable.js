@@ -167,6 +167,10 @@ adding the file. (Default: `null`)
 * `maxChunkRetries` The maximum number of retries for a chunk before the upload is failed. Valid values are any positive integer and `undefined` for no limit. (Default: `undefined`)
 * `permanentErrors` List of HTTP status codes that define if the chunk upload was a permanent error and should not retry the upload. (Default: `[400, 401, 403, 404, 409, 415, 500, 501]`)
 * `chunkRetryInterval` The number of milliseconds to wait before retrying a chunk on a non-permanent error.  Valid values are any positive integer and `undefined` for immediate retry.  (Default: `undefined`)
+* `chunkStuckTimeout` The time in milliseconds that defines how long to wait for a chunk to be uploaded before it is considered as stuck.
+  When a chunk is considered as stuck, the upload task that was processing it will instead start to upload a new chunk.
+  The stuck chunk might still be uploaded successfully, but the application will not wait for it. In case it is not uploaded successfully, it will be retried by the final check at the end of the upload process.
+  If `undefined` a chunk is never considered to be stuck. (Default: `undefined`)
 * `withCredentials` Standard CORS requests do not send or set any cookies by default. In order to include cookies as part of the request, you need to set the `withCredentials` property to true. (Default: `false`)
 * `xhrTimeout` The timeout in milliseconds for each request (Default: `0`)
 * `setChunkTypeFromFile` Set chunk content-type from original file type. If `false`, default Content-Type `application/octet-stream` is used. (Default: `false`)

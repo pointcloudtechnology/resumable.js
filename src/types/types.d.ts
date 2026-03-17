@@ -29,6 +29,7 @@ declare interface UploadTask {
   fileIndex: number | undefined;
   /** The index of the chunk in the current file that this process is currently uploading. */
   chunkIndex: number | undefined;
+  stuckTimeout: ReturnType<typeof setTimeout> | undefined;
 }
 
 declare interface ResumableConfiguration {
@@ -204,6 +205,14 @@ declare interface ResumableConfiguration {
    * The number of milliseconds to wait before retrying a chunk on a non-permanent error. Valid values are any positive integer and undefined for immediate retry. (Default: undefined)
    **/
   chunkRetryInterval?: number;
+  /**
+   * The time in milliseconds that defines how long to wait for a chunk to be uploaded before it is considered as stuck.
+   * When a chunk is considered as stuck, the upload task that was processing it will instead start to upload a new chunk.
+   * The stuck chunk might still be uploaded successfully, but the application will not wait for it. In case it is not
+   * uploaded successfully, it will be retried by the final check at the end of the upload process.
+   * If `undefined` a chunk is never considered to be stuck. (Default: `undefined`)
+   */
+  chunkStuckTimeout?: number;
   /**
    * A list of HTTP errors that should be interpreted as failed requests. (Default: [400, 401, 403, 404, 409, 415, 500, 501])
    */

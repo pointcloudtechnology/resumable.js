@@ -18,6 +18,7 @@ import ResumableFile from './resumableFile';
 import ResumableEventHandler from './resumableEventHandler';
 import {DebugVerbosityLevel, ExtendedFile, ResumableChunkStatus, ResumableConfiguration, UploadTask, UploadTaskId} from './types/types';
 import {DefaultConfiguration} from './resumableDefaultValues';
+import ResumableChunk from './resumableChunk';
 
 /**
  * An instance of a resumable upload handler that contains one or multiple files which should be uploaded in chunks.
@@ -67,6 +68,7 @@ export class Resumable extends ResumableEventHandler {
   };
   private fileValidationErrorCallback: Function = (file) => {};
   private simultaneousUploads: number = DefaultConfiguration.simultaneousUploads;
+  private chunkStuckTimeout?: number = DefaultConfiguration.chunkStuckTimeout;
 
   private debugVerbosityLevel: DebugVerbosityLevel = DefaultConfiguration.debugVerbosityLevel;
 
@@ -85,6 +87,7 @@ export class Resumable extends ResumableEventHandler {
           fileCategoryIndex: undefined,
           fileIndex: undefined,
           chunkIndex: undefined,
+          stuckTimeout: undefined,
         },
       );
     }
@@ -511,9 +514,9 @@ export class Resumable extends ResumableEventHandler {
       f.on('chunkingStart', (...args) => this.handleChunkingStart(args, fileCategory));
       f.on('chunkingProgress', (...args) => this.handleChunkingProgress(args, fileCategory));
       f.on('chunkingComplete', (...args) => this.handleChunkingComplete(args, fileCategory));
-      f.on('chunkSuccess', (uploadTaskId, ...args) => this.handleChunkSuccess(args, uploadTaskId, fileCategory));
-      f.on('chunkError', (uploadTaskId, ...args) => this.handleChunkError(args, uploadTaskId, fileCategory));
-      f.on('chunkCancel', (uploadTaskId, ...args) => this.handleChunkCancel(args, uploadTaskId, fileCategory));
+      f.on('chunkSuccess', (uploadTaskId, chunk, message) => this.handleChunkSuccess(uploadTaskId, chunk, message, fileCategory));
+      f.on('chunkError', (uploadTaskId, chunk, message) => this.handleChunkError(uploadTaskId, chunk, message, fileCategory));
+      f.on('chunkCancel', (uploadTaskId, chunk) => this.handleChunkCancel(uploadTaskId, chunk, fileCategory));
       f.on('chunkRetry', (...args) => this.handleChunkRetry(args, fileCategory));
       f.on('chunkProgress', (...args) => this.handleChunkProgress(args, fileCategory));
       f.on('fileProgress', (...args) => this.handleFileProgress(args, fileCategory));
@@ -547,6 +550,28 @@ export class Resumable extends ResumableEventHandler {
   private callGenerateUniqueIdentifier(file: File, event: Event, fileCategory: string = this.defaultFileCategory): string {
     return typeof this.generateUniqueIdentifier === 'function' ?
       this.generateUniqueIdentifier(file, event, fileCategory) : Helpers.generateUniqueIdentifier(file);
+  }
+
+  /**
+   * Call this to start a new upload for the given upload task only if it was previously uploading the given chunk of
+   * the given file category.
+   * Usually we only want to start a new upload for an upload task if the task does not already has another upload
+   * running, which might happen if the task was considered to be stuck by the `stuckTimeout`.
+   */
+  private uploadNextChunkIfUploadTaskWasHandlingChunk(
+    uploadTask: UploadTask,
+    chunk: ResumableChunk,
+    fileCategory: string,
+  ): void {
+    if (
+      uploadTask.fileCategoryIndex !== this.fileCategories.indexOf(fileCategory)
+        || uploadTask.fileIndex !== chunk.fileOffset
+        || uploadTask.chunkIndex !== chunk.offset
+    ) {
+      return;
+    }
+
+    this.uploadNextChunk(uploadTask.id);
   }
 
   /**
@@ -594,6 +619,23 @@ export class Resumable extends ResumableEventHandler {
           + ', file index ' + uploadTask.fileIndex
           + ', chunk index ' + uploadTask.chunkIndex + '.',
       );
+
+
+      if (this.chunkStuckTimeout) {
+        clearTimeout(uploadTask.stuckTimeout);
+        uploadTask.stuckTimeout = setTimeout(() => {
+          Helpers.printDebugLow(
+            this.debugVerbosityLevel,
+            'Upload task ID ' + currentUploadTaskId + ' is stuck with file category index '
+              + uploadTask.fileCategoryIndex + ', file index ' + uploadTask.fileIndex
+              + ', chunk index ' + uploadTask.chunkIndex
+              + '. Resetting upload task and letting it upload next chunk.',
+          );
+
+          this.resetUploadTask(uploadTask);
+          this.uploadNextChunk(currentUploadTaskId);
+        }, this.chunkStuckTimeout);
+      }
 
       const file = this.files[this.fileCategories[uploadTask.fileCategoryIndex]][uploadTask.fileIndex];
       if (file.uploadChunk(uploadTask.chunkIndex, currentUploadTaskId, false)) {
@@ -753,6 +795,10 @@ export class Resumable extends ResumableEventHandler {
     uploadTask.fileCategoryIndex = undefined;
     uploadTask.fileIndex = undefined;
     uploadTask.chunkIndex = undefined;
+
+    clearTimeout(uploadTask.stuckTimeout);
+    uploadTask.stuckTimeout = undefined;
+
     this.uploadTasks.set(uploadTask.id, uploadTask);
   }
 
@@ -851,6 +897,21 @@ export class Resumable extends ResumableEventHandler {
       } else {
         // The chunk is already successfully uploaded, so we can move to the next chunk.
         continue;
+      }
+
+      if (this.chunkStuckTimeout) {
+        clearTimeout(uploadTask.stuckTimeout);
+        uploadTask.stuckTimeout = setTimeout(() => {
+          Helpers.printDebugLow(
+            this.debugVerbosityLevel,
+            'Final check by upload task ID ' + this.uploadTaskIdCurrentlyCheckingIfUploadFinished
+              + ' is stuck with chunk with index ' + uploadTask.chunkIndex + ' of file with index ' + uploadTask.fileIndex
+              + ' of file category with index ' + uploadTask.fileCategoryIndex
+              + '. Moving on to next chunk instead.',
+          );
+
+          this.uploadNextChunk(this.uploadTaskIdCurrentlyCheckingIfUploadFinished);
+        }, this.chunkStuckTimeout);
       }
 
       file.uploadChunk(uploadTask.chunkIndex, this.uploadTaskIdCurrentlyCheckingIfUploadFinished, true);
@@ -1283,31 +1344,52 @@ export class Resumable extends ResumableEventHandler {
   /**
    * The event handler when a chunk was uploaded successfully
    */
-  private handleChunkSuccess(args: any[], uploadTaskId: UploadTaskId, fileCategory: string): void {
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkSuccess" in main resumable object...', args);
-    this.fire('chunkSuccess', ...args, fileCategory);
-    this.uploadNextChunk(uploadTaskId);
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkSuccess" in main resumable object.', args);
+  private handleChunkSuccess(uploadTaskId: UploadTaskId, chunk: ResumableChunk, message: string, fileCategory: string): void {
+    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkSuccess" in main resumable object...', chunk, message);
+    this.fire('chunkSuccess', chunk, message, fileCategory);
+
+    const uploadTask = this.uploadTasks.get(uploadTaskId);
+    if (!uploadTask) {
+      throw new Error('Error while handling chunk success. Unknown upload task ID: ' + uploadTaskId);
+    }
+
+    this.uploadNextChunkIfUploadTaskWasHandlingChunk(uploadTask, chunk, fileCategory);
+
+    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkSuccess" in main resumable object.', chunk, message);
   }
 
   /**
    * The event handler when an error happened while uploading a chunk
    */
-  private handleChunkError(args: any[], uploadTaskId: UploadTaskId, fileCategory: string): void {
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkError" in main resumable object...', args);
-    this.fire('chunkError', ...args, fileCategory);
-    this.uploadNextChunk(uploadTaskId);
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkError" in main resumable object.', args);
+  private handleChunkError(uploadTaskId: UploadTaskId, chunk: ResumableChunk, message: string, fileCategory: string): void {
+    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkError" in main resumable object...', chunk, message);
+    this.fire('chunkError', chunk, message, fileCategory);
+
+    const uploadTask = this.uploadTasks.get(uploadTaskId);
+    if (!uploadTask) {
+      throw new Error('Error while handling chunk error. Unknown upload task ID: ' + uploadTaskId);
+    }
+
+    this.uploadNextChunkIfUploadTaskWasHandlingChunk(uploadTask, chunk, fileCategory);
+
+    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkError" in main resumable object.', chunk, message);
   }
 
   /**
    * The event handler when an the upload of a chunk was canceled
    */
-  private handleChunkCancel(args: any[], uploadTaskId: UploadTaskId, fileCategory: string): void {
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkCancel" in main resumable object...', args);
-    this.fire('chunkCancel', ...args, fileCategory);
-    this.uploadNextChunk(uploadTaskId);
-    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkCancel" in main resumable object.', args);
+  private handleChunkCancel(uploadTaskId: UploadTaskId, chunk: ResumableChunk, fileCategory: string): void {
+    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handling "chunkCancel" in main resumable object...', chunk);
+    this.fire('chunkCancel', chunk, fileCategory);
+
+    const uploadTask = this.uploadTasks.get(uploadTaskId);
+    if (!uploadTask) {
+      throw new Error('Error while handling chunk cancel. Unknown upload task ID: ' + uploadTaskId);
+    }
+
+    this.uploadNextChunkIfUploadTaskWasHandlingChunk(uploadTask, chunk, fileCategory);
+
+    Helpers.printDebugLow(this.debugVerbosityLevel, 'Handled "chunkCancel" in main resumable object.', chunk);
   }
 
   /**

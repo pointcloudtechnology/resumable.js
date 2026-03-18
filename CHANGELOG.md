@@ -5,12 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### BREAKING
+* A file that encountered an error doesn't return `1` for its progress anymore. Instead it will return the progress at which it stopped uploading.
+* If a chunk encountered an error in the upload, it is now automatically retried in the final check.
+    * Instead of reacting to `chunkError` or `fileError` events to manually retry such chunks, you should wait for the `failed` event.
+    * The `failed` event indicates that Resumable couldn't upload some files, even in the final check. After that you might instruct the user to retry the upload or try to perform your own retries.
+
 ### Added
 * Add debug request parameters (#51)
+* A `failed` event is now fired when Resumable is finished but some files couldn't be uploaded (#52)
 
 ### Fixed
 
 ### Changed
+* Retry errored chunks in final check (#52)
 
 ### Removed
 

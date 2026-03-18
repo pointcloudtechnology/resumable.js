@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+* Add debug request parameters (#51)
 
 ### Fixed
 
@@ -19,7 +20,7 @@ When an upload is cancelled, the file list is now completely removed. This was a
 So this is technically a small bug fix, but for anyone who relied on the previous behavior, it's a breaking change.
 
 ### Fixed
-Fix cancellation of uploads (#48)
+* Fix cancellation of uploads (#48)
 
 ## [5.0.0]
 ### BREAKING

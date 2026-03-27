@@ -101,6 +101,14 @@ declare interface ResumableConfiguration {
    */
   typeParameterName?: string;
   /**
+   * The name of the request parameter to use for upload task id (only included when `includeDebugRequestParameters` is `true`). (Default: `'resumableDebugUploadTaskId'`)
+   */
+  debugUploadTaskIdParameterName?: string;
+  /**
+   * The name of the request parameter that is set when the request is part of the final check (only included when `includeDebugRequestParameters` is `true`). (Default: `'resumableDebugIsFinalCheck'`)
+   */
+  debugIsFinalCheckParameterName?: string;
+  /**
    * Extra parameters to include in the multipart POST with data. This can be an object or a function. If a function, it will be passed a ResumableFile and a ResumableChunk object. (Default: {})
    **/
   query?: Object;
@@ -229,4 +237,8 @@ declare interface ResumableConfiguration {
    * Default: DebugVerbosityLevel.NONE (no debug output)
    */
   debugVerbosityLevel?: DebugVerbosityLevel;
+  /**
+   * Whether or not to include debug information (e.g. upload task id) as parameters in the request. This can be useful for debugging purposes on the server side. (Default: false)
+   */
+  includeDebugRequestParameters?: boolean;
 }

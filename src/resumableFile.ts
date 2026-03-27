@@ -248,14 +248,14 @@ export default class ResumableFile extends ResumableEventHandler {
   /**
    * Initiate the upload of the chunk with the given index. Returns whether a new upload was started or not.
    */
-  uploadChunk(chunkIndex: number, uploadTaskId: UploadTaskId): boolean {
+  uploadChunk(chunkIndex: number, uploadTaskId: UploadTaskId, isFinalCheck: boolean): boolean {
     if (this.isPaused) {
       return false;
     }
 
     const chunk = this._chunks[chunkIndex];
     if (chunk && chunk.status === ResumableChunkStatus.PENDING) {
-      chunk.send(uploadTaskId);
+      chunk.send(uploadTaskId, isFinalCheck);
 
       Helpers.printDebugLow(
         this.debugVerbosityLevel,

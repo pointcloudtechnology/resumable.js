@@ -117,7 +117,7 @@ The object is loaded with a configuration hash:
 var r = new Resumable({opt1:'val', ...});
 ```
 
-All POST parameters can be omitted by setting them to a falsy value (e.g. `null`, `false` or empty string).
+All request parameters can be omitted by setting them to a falsy value (e.g. `null`, `false` or empty string).
 Available configuration options are:
 
 * `target` The target URL for the multipart POST request. This can be a `string` or a `function` that allows you you to construct and return a value, based on supplied `params`. (Default: `'/'`)
@@ -127,16 +127,18 @@ Available configuration options are:
 * `simultaneousUploads` Number of simultaneous uploads (Default: `3`)
 * `throttleProgressCallbacks` The time in milliseconds that defines the minimum time span between two progress callbacks. (Default: `0.5`)
 * `fileParameterName` The name of the multipart request parameter to use for the file chunk (Default: `'file'`)
-* `chunkNumberParameterName` The name of the chunk index (base-1) in the current upload POST parameter to use for the file chunk (Default: `'resumableChunkNumber'`)
-* `totalChunksParameterName` The name of the total number of chunks POST parameter to use for the file chunk (Default: `'resumableTotalChunks'`)
-* `chunkSizeParameterName` The name of the general chunk size POST parameter to use for the file chunk (Default: `'resumableChunkSize'`)
-* `totalSizeParameterName` The name of the total file size number POST parameter to use for the file chunk (Default: `'resumableTotalSize'`)
-* `identifierParameterName` The name of the unique identifier POST parameter to use for the file chunk (Default: `'resumableIdentifier'`)
-* `fileCategoryParameterName` The name of the file category POST parameter to use for the file chunk. (Default: `'resumableFileCategory'`)
-* `fileNameParameterName` The name of the original file name POST parameter to use for the file chunk (Default: `'resumableFilename'`)
-* `relativePathParameterName` The name of the file's relative path POST parameter to use for the file chunk (Default: `'resumableRelativePath'`)
-* `currentChunkSizeParameterName` The name of the current chunk size POST parameter to use for the file chunk (Default: `'resumableCurrentChunkSize'`)
-* `typeParameterName` The name of the file type POST parameter to use for the file chunk (Default: `'resumableType'`)
+* `chunkNumberParameterName` The name of the chunk index (base-1) in the current upload request parameter to use for the file chunk (Default: `'resumableChunkNumber'`)
+* `totalChunksParameterName` The name of the total number of chunks request parameter to use for the file chunk (Default: `'resumableTotalChunks'`)
+* `chunkSizeParameterName` The name of the general chunk size request parameter to use for the file chunk (Default: `'resumableChunkSize'`)
+* `totalSizeParameterName` The name of the total file size number request parameter to use for the file chunk (Default: `'resumableTotalSize'`)
+* `identifierParameterName` The name of the unique identifier equest parameter to use for the file chunk (Default: `'resumableIdentifier'`)
+* `fileCategoryParameterName` The name of the file category request parameter to use for the file chunk. (Default: `'resumableFileCategory'`)
+* `fileNameParameterName` The name of the original file name request parameter to use for the file chunk (Default: `'resumableFilename'`)
+* `relativePathParameterName` The name of the file's relative path request parameter to use for the file chunk (Default: `'resumableRelativePath'`)
+* `currentChunkSizeParameterName` The name of the current chunk size request parameter to use for the file chunk (Default: `'resumableCurrentChunkSize'`)
+* `typeParameterName` The name of the file type request parameter to use for the file chunk (Default: `'resumableType'`)
+* `debugUploadTaskIdParameterName` The name of the request parameter to use for upload task id (only included when `includeDebugRequestParameters` is `true`). (Default: `'resumableDebugUploadTaskId'`)
+* `debugIsFinalCheckParameterName` The name of the request parameter that is set when the request is part of the final check (only included when `includeDebugRequestParameters` is `true`). (Default: `'resumableDebugIsFinalCheck'`)
 * `query` Extra parameters to include in the multipart request with data. This can be an object or a function. If a function, it will be passed a ResumableFile and a ResumableChunk object (Default: `{}`)
 * `testMethod` Method for chunk test request. (Default: `'GET'`)
 * `uploadMethod` HTTP method to use when sending chunks to the server (`POST`, `PUT`, `PATCH`) (Default: `'POST'`)
@@ -171,8 +173,8 @@ adding the file. (Default: `null`)
   - `DebugVerbosityLevel.NONE (0)` No debug output
   - `DebugVerbosityLevel.LOW (1)` Only main steps are logged (e.g. upload of a chunk is started/finished)
   - `DebugVerbosityLevel.HIGH (2)` Additional logging between main steps is done (e.g. XMLHttpRequest for chunk upload created)
-
   Default is `DebugVerbosityLevel.NONE` (no debug logging at all).
+* `includeDebugRequestParameters` If `true` every request to the server might contain additional request parameters that can be used for debugging, like the ID of the upload task that sent the request. (Default: `false`)
 
 #### Properties (readonly)
 * `.isUploading` Is `true` when the instance is uploading (as long as at least one chunk of any file is currently uploading). `false` otherwise.

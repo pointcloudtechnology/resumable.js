@@ -51,6 +51,8 @@ export default class ResumableChunk extends ResumableEventHandler {
   private fileNameParameterName: string = DefaultConfiguration.fileNameParameterName;
   private relativePathParameterName: string = DefaultConfiguration.relativePathParameterName;
   private totalChunksParameterName: string = DefaultConfiguration.totalChunksParameterName;
+  private debugUploadTaskIdParameterName: string = DefaultConfiguration.debugUploadTaskIdParameterName;
+  private debugIsFinalCheckParameterName: string = DefaultConfiguration.debugIsFinalCheckParameterName;
   private throttleProgressCallbacks: number = DefaultConfiguration.throttleProgressCallbacks;
   private query: object = DefaultConfiguration.query;
   private headers: object = DefaultConfiguration.headers;
@@ -68,8 +70,10 @@ export default class ResumableChunk extends ResumableEventHandler {
   private setChunkTypeFromFile: boolean = DefaultConfiguration.setChunkTypeFromFile;
   private target: string = DefaultConfiguration.target;
   private testTarget: string = DefaultConfiguration.testTarget;
+  private isPartOfFinalCheck: boolean = false;
 
   private debugVerbosityLevel: DebugVerbosityLevel = DefaultConfiguration.debugVerbosityLevel;
+  private includeDebugRequestParameters: boolean = DefaultConfiguration.includeDebugRequestParameters;
 
   constructor(fileObj: ResumableFile, offset: number, options: ResumableConfiguration) {
     super();
@@ -147,7 +151,17 @@ export default class ResumableChunk extends ResumableEventHandler {
       [this.relativePathParameterName]: this.fileObj.relativePath,
       [this.totalChunksParameterName]: this.fileObj.chunks.length,
     };
-    return {...extraData, ...customQuery};
+
+    const debugData = {};
+    if (this.includeDebugRequestParameters) {
+      debugData[this.debugUploadTaskIdParameterName] = this._uploadTaskId;
+
+      if (this.isPartOfFinalCheck) {
+        debugData[this.debugIsFinalCheckParameterName] = 1;
+      }
+    }
+
+    return {...extraData, ...debugData, ...customQuery};
   }
 
   /**
@@ -160,7 +174,7 @@ export default class ResumableChunk extends ResumableEventHandler {
       return ResumableChunkStatus.UPLOADING;
     } else if (this.isMarkedComplete) {
       return ResumableChunkStatus.SUCCESS;
-    } else if (!this.xhr) {
+    } else if (!this.xhr || (this.tested && this.xhr.status === 204)) {
       return ResumableChunkStatus.PENDING;
     } else if (this.xhr.readyState < 4) {
       // Status is really 'OPENED', 'HEADERS_RECEIVED' or 'LOADING' - meaning that stuff is happening
@@ -190,7 +204,7 @@ export default class ResumableChunk extends ResumableEventHandler {
   /**
    * Makes a GET request without any data to see if the chunk has already been uploaded in a previous session
    */
-  private test(uploadTaskId: UploadTaskId): void {
+  private test(): void {
     Helpers.printDebugHigh(this.debugVerbosityLevel, 'Sending test request for ResumableChunk...', this);
     // Set up request and listen for event
     this.xhr = new XMLHttpRequest();
@@ -200,9 +214,9 @@ export default class ResumableChunk extends ResumableEventHandler {
       this.tested = true;
       var status = this.status;
       if (status === ResumableChunkStatus.SUCCESS) {
-        this.fire('chunkSuccess', uploadTaskId, this.message());
+        this.fire('chunkSuccess', this._uploadTaskId, this.message());
       } else {
-        this.send(uploadTaskId);
+        this.send(this._uploadTaskId, this.isPartOfFinalCheck);
       }
       Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled test request response for ResumableChunk.', this);
     };
@@ -235,10 +249,13 @@ export default class ResumableChunk extends ResumableEventHandler {
   /**
    *  Uploads the actual data in a POST call
    */
-  send(uploadTaskId: UploadTaskId): void {
-    if (this._uploadTaskId) {
+  send(uploadTaskId: UploadTaskId, isFinalCheck: boolean): void {
+    if ((!this.testChunks || !this.tested) && this._uploadTaskId) {
       throw new Error('uploadTaskId was already set for ResumableChunk when calling send().');
     }
+
+    this._uploadTaskId = uploadTaskId;
+    this.isPartOfFinalCheck = isFinalCheck;
 
     if (this.testChunks && !this.tested) {
       Helpers.printDebugLow(
@@ -247,7 +264,7 @@ export default class ResumableChunk extends ResumableEventHandler {
         this
       );
 
-      this.test(uploadTaskId);
+      this.test();
 
       Helpers.printDebugLow(
         this.debugVerbosityLevel,
@@ -258,8 +275,6 @@ export default class ResumableChunk extends ResumableEventHandler {
 
       return;
     }
-
-    this._uploadTaskId = uploadTaskId;
 
     Helpers.printDebugLow(this.debugVerbosityLevel, 'Starting upload of ResumableChunk...', this);
 
@@ -303,9 +318,9 @@ export default class ResumableChunk extends ResumableEventHandler {
           let retryInterval = this.chunkRetryInterval;
           if (retryInterval !== undefined) {
             this.pendingRetry = true;
-            setTimeout(() => this.send(uploadTaskId), retryInterval);
+            setTimeout(() => this.send(uploadTaskId, isFinalCheck), retryInterval);
           } else {
-            this.send(uploadTaskId);
+            this.send(uploadTaskId, isFinalCheck);
           }
           Helpers.printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkRetry" in ResumableChunk.', this);
           break;

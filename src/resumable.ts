@@ -596,7 +596,7 @@ export class Resumable extends ResumableEventHandler {
       );
 
       const file = this.files[this.fileCategories[uploadTask.fileCategoryIndex]][uploadTask.fileIndex];
-      if (file.uploadChunk(uploadTask.chunkIndex, currentUploadTaskId)) {
+      if (file.uploadChunk(uploadTask.chunkIndex, currentUploadTaskId, false)) {
         return;
       }
 
@@ -813,7 +813,7 @@ export class Resumable extends ResumableEventHandler {
         continue;
       }
 
-      file.uploadChunk(uploadTask.chunkIndex, this.uploadTaskIdCurrentlyCheckingIfUploadFinished);
+      file.uploadChunk(uploadTask.chunkIndex, this.uploadTaskIdCurrentlyCheckingIfUploadFinished, true);
 
       // Return here, because we only want to upload one chunk at a time. This function will be called again, once this
       // chunk is finished.

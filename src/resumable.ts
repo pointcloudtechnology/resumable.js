@@ -16,7 +16,7 @@
 import Helpers from './resumableHelpers';
 import ResumableFile from './resumableFile';
 import ResumableEventHandler from './resumableEventHandler';
-import {DebugVerbosityLevel, ExtendedFile, ResumableConfiguration, UploadTask, UploadTaskId} from './types/types';
+import {DebugVerbosityLevel, ExtendedFile, ResumableChunkStatus, ResumableConfiguration, UploadTask, UploadTaskId} from './types/types';
 import {DefaultConfiguration} from './resumableDefaultValues';
 
 /**
@@ -786,6 +786,25 @@ export class Resumable extends ResumableEventHandler {
       this.setNextAvailableChunkForUploadTask(uploadTask);
 
       if (uploadTask.fileCategoryIndex === undefined) {
+        // The final check might have tried to upload chunks that had an error before. In case they still have errors
+        // the upload finally failed and can't be recovered.
+        for (const fileCategory of this.fileCategories) {
+          for (const file of this.files[fileCategory]) {
+            if (file.hasError) {
+              this.fire('failed');
+
+              Helpers.printDebugLow(
+                this.debugVerbosityLevel,
+                'Final check by upload task ID '
+                  + this.uploadTaskIdCurrentlyCheckingIfUploadFinished
+                  + ' is finished, but at least one file still have upload errors. Upload can\'t be completed.',
+              );
+
+              return;
+            }
+          }
+        }
+
         Helpers.printDebugLow(
           this.debugVerbosityLevel,
           'Final check by upload task ID '
@@ -806,10 +825,31 @@ export class Resumable extends ResumableEventHandler {
       );
 
       const file = this.files[this.fileCategories[uploadTask.fileCategoryIndex]][uploadTask.fileIndex];
-      if (file.isComplete) {
+      if (file.isComplete && !file.hasError) {
         // Set chunk index to last chunk, so that the next iteration will automatically move to the next file.
         uploadTask.chunkIndex = file.chunks.length - 1;
         this.uploadTasks.set(this.uploadTaskIdCurrentlyCheckingIfUploadFinished, uploadTask);
+
+        Helpers.printDebugHigh(
+          this.debugVerbosityLevel,
+          'Final check by upload task ID '
+            + this.uploadTaskIdCurrentlyCheckingIfUploadFinished
+            + ' determined that file with index ' + uploadTask.fileIndex
+            + ' is fully uploaded. Moving to next file.',
+        );
+
+        continue;
+      }
+
+      file.resetError();
+
+      const chunk = file.chunks[uploadTask.chunkIndex];
+      if (chunk.status !== ResumableChunkStatus.SUCCESS) {
+        // Reset the chunk to make sure the upload task can properly try to upload it again.
+        chunk.abort();
+        chunk.resetRetriesCount();
+      } else {
+        // The chunk is already successfully uploaded, so we can move to the next chunk.
         continue;
       }
 

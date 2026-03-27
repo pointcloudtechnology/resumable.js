@@ -106,6 +106,11 @@ The `POST` data requests listed are required to use Resumable.js to receive data
 
 After this is done and `testChunks` enabled, an upload can quickly catch up even after a browser restart by simply verifying already uploaded chunks that do not need to be uploaded again.
 
+## Final check at the end of the upload
+
+Once the upload of all chunks of all files is finished, Resumable will iterate over all files once more to check if any chunks were not uploaded (e.g. due to race conditions, network problems etc.) or failed to upload (e.g. due to server errors).
+If such a chunk is found, Resumable tries to upload it once more (including retries, if configured). Only when any chunk still couldn't be uploaded in this final check, the upload as a whole is considered to be failed (see explanations for the `failed` event below).
+
 ## Full documentation
 
 ### Resumable
@@ -295,7 +300,9 @@ r.on('fileAdded', (file, event, fileCategory) => {
   * This will be fired after all `chunkCancel` and `fileCancel` events were fired.
 * `error (message, file, fileCategory)` An error occurred during upload of the provided `ResumableFile` of the provided file category. `message` is the response body from the server that was given when the error occurred (while uploading a chunk).
   * This will always be fired together with a corresponding `fileError` event, that contains the same information but in different order.
-  As there currently are no other errors than `fileErrors`, there is no advantage in using one over the other.
+  * As there currently are no other errors than `fileErrors`, there is no advantage in using one over the other.
+  * The file will not be uploaded further in the normal upload process, however once all files that didn't encounter errors are uploaded, the final check will try to upload every failed chunk once more. If at least one chunk fails again, the `failed` event is fired and the upload is considered to be ultimately failed.
+* `failed` Upload has ultimately failed and can't be recovered. Resumable will not perform any further actions unless the upload is triggered again from the outside.
 
 ##### ResumableFile events:
 * `chunkingStart (file, fileCategory)` The chunking process for the provided `ResumableFile` of the provided file category has been started.
@@ -309,7 +316,7 @@ r.on('fileAdded', (file, event, fileCategory) => {
   * This is always followed by a `fileProgress` event (as upload progress is reset to 0).
 * `fileError (file, message, fileCategory)` An error occurred during upload of the provided `ResumableFile` of the provided file category. `message` is the response body from the server that was given when the error occurred (while uploading a chunk).
   * This will always be fired together with a corresponding `error` event, that contains the same information but in different order.
-  As there currently are no other errors than `fileErrors`, there is no advantage in using one over the other.
+  * See notes for the `error` event as they apply to this event, too.
 * `fileRetry (file, message, fileCategory)` The upload of the provided `ResumableFile` of the provided file category or the upload of one of its chunks is being retried. `message` is the last received response body from the server before the retry was started.
 
 ##### ResumableChunk events:

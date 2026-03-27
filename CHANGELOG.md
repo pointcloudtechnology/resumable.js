@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### BREAKING
+
+### Added
+
+### Fixed
+
+### Changed
+
+### Removed
+
+## [7.0.0]
+### BREAKING
 * A file that encountered an error doesn't return `1` for its progress anymore. Instead it will return the progress at which it stopped uploading.
 * If a chunk encountered an error in the upload, it is now automatically retried in the final check.
     * Instead of reacting to `chunkError` or `fileError` events to manually retry such chunks, you should wait for the `failed` event.
@@ -16,12 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * A `failed` event is now fired when Resumable is finished but some files couldn't be uploaded (#52)
 * Add `chunkStuckTimeout` option (#53)
 
-### Fixed
-
 ### Changed
 * Retry errored chunks in final check (#52)
-
-### Removed
 
 ## [6.0.0]
 ### BREAKING

@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [7.0.1]
+This is an npm only release to fix the bundling of the package (7.0.0 was not the production bundle but the dev bundle).
+
 ## [7.0.0]
 ### BREAKING
 * A file that encountered an error doesn't return `1` for its progress anymore. Instead it will return the progress at which it stopped uploading.

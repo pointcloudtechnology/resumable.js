@@ -1,7 +1,7 @@
 {
   "name": "@pointcloudtechnology/resumablejs",
+  "type": "module",
   "version": "7.0.1",
-  "private": false,
   "description": "A JavaScript library for providing multiple simultaneous, stable, fault-tolerant and resumable/restartable uploads via the HTML5 File API.",
   "keywords": [
     "file",
@@ -21,10 +21,9 @@
   "files": [
     "dist"
   ],
-  "main": "dist/main.js",
-  "types": "./dist/resumable.d.ts",
-  "publishConfig": {
-    "access": "public"
+  "exports": {
+    ".": "./dist/main.js",
+    "./helpers": "./dist/helpers.js"
   },
   "scripts": {
     "build": "webpack",

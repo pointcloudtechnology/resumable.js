@@ -1,4 +1,4 @@
-import {DebugVerbosityLevel, ResumableConfiguration} from "./types/types";
+import {DebugVerbosityLevel, ResumableConfiguration} from "./types";
 
 /**
  * Defaults that will be used when the values are not provided at creation of the Resumable object.

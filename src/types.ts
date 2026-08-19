@@ -1,26 +1,26 @@
-import ResumableFile from '../resumableFile';
+import ResumableFile from './resumableFile';
 
-declare interface ExtendedFile extends File {
+export interface ExtendedFile extends File {
   uniqueIdentifier?: string,
   relativePath?: string,
 }
 
-declare const enum ResumableChunkStatus {
+export const enum ResumableChunkStatus {
   PENDING ='chunkPending',
   UPLOADING = 'chunkUploading',
   SUCCESS = 'chunkSuccess',
   ERROR = 'chunkError',
 }
 
-declare const enum DebugVerbosityLevel {
+export const enum DebugVerbosityLevel {
   NONE = 0,
   LOW = 1,
   HIGH = 2,
 }
 
-declare type UploadTaskId = `upload-task-${number}`;
+export type UploadTaskId = `upload-task-${number}`;
 
-declare interface UploadTask {
+export interface UploadTask {
   /** The unique ID of the upload task. */
   id: UploadTaskId;
   /** The index of the category in the file categories array that this process is currently uploading. */
@@ -32,7 +32,7 @@ declare interface UploadTask {
   stuckTimeout: ReturnType<typeof setTimeout> | undefined;
 }
 
-declare interface ResumableConfiguration {
+export interface ResumableConfiguration {
   /**
    * The target URL for the multipart POST request. This can be a string or a function that allows you to construct and return a value, based on supplied params. (Default: '/')
    **/

@@ -14,7 +14,7 @@
 */
 
 // INTERNAL HELPER METHODS (handy, but ultimately not part of uploading)
-import {DebugVerbosityLevel, ExtendedFile} from "./types/types";
+import {DebugVerbosityLevel, ExtendedFile} from "./types";
 
 export default class ResumableHelpers {
   /**

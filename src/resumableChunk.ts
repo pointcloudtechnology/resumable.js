@@ -1,7 +1,7 @@
 import Helpers from './resumableHelpers';
 import ResumableEventHandler from './resumableEventHandler';
 import ResumableFile from './resumableFile';
-import {DebugVerbosityLevel, ResumableChunkStatus, ResumableConfiguration, UploadTaskId} from './types/types';
+import {DebugVerbosityLevel, ResumableChunkStatus, ResumableConfiguration, UploadTaskId} from './types';
 import {DefaultConfiguration} from './resumableDefaultValues';
 
 /*

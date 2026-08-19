@@ -36,5 +36,12 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": ">=11.0.0 <12.0.0",
+      "onFail": "download"
+    }
   }
 }

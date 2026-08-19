@@ -26,6 +26,7 @@
     "./helpers": "./dist/helpers.js"
   },
   "devDependencies": {
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },

@@ -1,40 +1,40 @@
 {
-  "name": "@pointcloudtechnology/resumablejs",
-  "type": "module",
-  "version": "7.0.1",
-  "description": "A JavaScript library for providing multiple simultaneous, stable, fault-tolerant and resumable/restartable uploads via the HTML5 File API.",
-  "keywords": [
-    "file",
-    "html5",
-    "upload"
-  ],
-  "homepage": "https://github.com/pointcloudtechnology/resumable.js#readme",
-  "bugs": {
-    "url": "https://github.com/pointcloudtechnology/resumable.js/issues"
-  },
-  "license": "MIT",
-  "author": "https://github.com/pointcloudtechnology/resumable.js/graphs/contributors",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/pointcloudtechnology/resumable.js.git"
-  },
-  "files": [
-    "dist"
-  ],
-  "exports": {
-    ".": "./dist/main.js",
-    "./helpers": "./dist/helpers.js"
-  },
-  "devDependencies": {
-    "typescript": "catalog:",
-    "vite": "catalog:",
-    "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": ">=11.0.0 <12.0.0",
-      "onFail": "download"
-    }
-  }
+	"name": "@pointcloudtechnology/resumablejs",
+	"version": "7.0.1",
+	"description": "A JavaScript library for providing multiple simultaneous, stable, fault-tolerant and resumable/restartable uploads via the HTML5 File API.",
+	"keywords": [
+		"file",
+		"html5",
+		"upload"
+	],
+	"homepage": "https://github.com/pointcloudtechnology/resumable.js#readme",
+	"bugs": {
+		"url": "https://github.com/pointcloudtechnology/resumable.js/issues"
+	},
+	"license": "MIT",
+	"author": "https://github.com/pointcloudtechnology/resumable.js/graphs/contributors",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/pointcloudtechnology/resumable.js.git"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": "./dist/main.js",
+		"./helpers": "./dist/helpers.js"
+	},
+	"devDependencies": {
+		"typescript": "catalog:",
+		"vite": "catalog:",
+		"vite-plus": "catalog:"
+	},
+	"devEngines": {
+		"packageManager": {
+			"name": "pnpm",
+			"version": ">=11.0.0 <12.0.0",
+			"onFail": "download"
+		}
+	}
 }

@@ -1695,3 +1695,8 @@ export class Resumable extends ResumableEventHandler {
 		printDebugLow(this.debugVerbosityLevel, 'Handled "fileRetry" in main resumable object.', args);
 	}
 }
+
+export type * from './types';
+export type {default as ResumableChunk} from './resumableChunk';
+export type {default as ResumableEventHandler} from './resumableEventHandler';
+export type {default as ResumableFile} from './resumableFile';

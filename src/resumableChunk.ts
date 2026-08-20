@@ -1,7 +1,7 @@
 import {DefaultConfiguration} from './resumableDefaultValues';
 import ResumableEventHandler from './resumableEventHandler';
 import ResumableFile from './resumableFile';
-import Helpers from './resumableHelpers';
+import {getTarget, printDebugHigh, printDebugLow} from './resumableHelpers';
 import {
 	DebugVerbosityLevel,
 	ResumableChunkStatus,
@@ -94,28 +94,24 @@ export default class ResumableChunk extends ResumableEventHandler {
 		this.startByte = this._offset * this.chunkSize;
 		this.endByte = Math.min(this.fileObjSize, (this._offset + 1) * this.chunkSize);
 		this.xhr = null;
-		Helpers.printDebugLow(this.debugVerbosityLevel, 'Constructed ResumableChunk.', this);
+		printDebugLow(this.debugVerbosityLevel, 'Constructed ResumableChunk.', this);
 	}
 
 	/** Set the options provided inside the configuration object on this instance */
 	private setInstanceProperties(options: ResumableConfiguration): void {
 		Object.assign(this, options);
-		Helpers.printDebugHigh(
-			this.debugVerbosityLevel,
-			'Set ResumableChunk instance properties.',
-			this,
-		);
+		printDebugHigh(this.debugVerbosityLevel, 'Set ResumableChunk instance properties.', this);
 	}
 
 	/** Set the header values for the current XMLHttpRequest */
 	private setCustomHeaders(): void {
-		Helpers.printDebugHigh(
+		printDebugHigh(
 			this.debugVerbosityLevel,
 			'Setting custom headers for  XHR of ResumableChunk...',
 			this,
 		);
 		if (!this.xhr) {
-			Helpers.printDebugHigh(this.debugVerbosityLevel, 'No XHR found to set custom headers.', this);
+			printDebugHigh(this.debugVerbosityLevel, 'No XHR found to set custom headers.', this);
 			return;
 		}
 		let customHeaders = this.headers;
@@ -126,11 +122,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 			if (!customHeaders.hasOwnProperty(header)) continue;
 			this.xhr.setRequestHeader(header, customHeaders[header]);
 		}
-		Helpers.printDebugHigh(
-			this.debugVerbosityLevel,
-			'Set custom headers for XHR of ResumableChunk.',
-			this,
-		);
+		printDebugHigh(this.debugVerbosityLevel, 'Set custom headers for XHR of ResumableChunk.', this);
 	}
 
 	/**
@@ -221,7 +213,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 	 * @param requestType The type of the request, either 'test' or 'upload'
 	 */
 	getTarget(requestType: string): string {
-		return Helpers.getTarget(
+		return getTarget(
 			requestType,
 			this.target,
 			this.testTarget,
@@ -235,16 +227,12 @@ export default class ResumableChunk extends ResumableEventHandler {
 	 * previous session
 	 */
 	private test(): void {
-		Helpers.printDebugHigh(
-			this.debugVerbosityLevel,
-			'Sending test request for ResumableChunk...',
-			this,
-		);
+		printDebugHigh(this.debugVerbosityLevel, 'Sending test request for ResumableChunk...', this);
 		// Set up request and listen for event
 		this.xhr = new XMLHttpRequest();
 
 		var testHandler = () => {
-			Helpers.printDebugHigh(
+			printDebugHigh(
 				this.debugVerbosityLevel,
 				'Handling test request response for ResumableChunk...',
 				this,
@@ -256,7 +244,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 			} else {
 				this.send(this._uploadTaskId, this.isPartOfFinalCheck);
 			}
-			Helpers.printDebugHigh(
+			printDebugHigh(
 				this.debugVerbosityLevel,
 				'Handled test request response for ResumableChunk.',
 				this,
@@ -274,16 +262,16 @@ export default class ResumableChunk extends ResumableEventHandler {
 		this.setCustomHeaders();
 
 		this.xhr.send(null);
-		Helpers.printDebugHigh(this.debugVerbosityLevel, 'Sent test request for ResumableChunk.', this);
+		printDebugHigh(this.debugVerbosityLevel, 'Sent test request for ResumableChunk.', this);
 	}
 
 	/** Abort and reset a request */
 	abort(): void {
-		Helpers.printDebugLow(this.debugVerbosityLevel, 'Aborting upload of ResumableChunk...', this);
+		printDebugLow(this.debugVerbosityLevel, 'Aborting upload of ResumableChunk...', this);
 		if (this.xhr) this.xhr.abort();
 		this.xhr = null;
 		this._uploadTaskId = null;
-		Helpers.printDebugLow(this.debugVerbosityLevel, 'Aborted upload of ResumableChunk.', this);
+		printDebugLow(this.debugVerbosityLevel, 'Aborted upload of ResumableChunk.', this);
 	}
 
 	resetRetriesCount(): void {
@@ -300,7 +288,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 		this.isPartOfFinalCheck = isFinalCheck;
 
 		if (this.testChunks && !this.tested) {
-			Helpers.printDebugLow(
+			printDebugLow(
 				this.debugVerbosityLevel,
 				'Testing upload status of ResumableChunk before uploading...',
 				this,
@@ -308,7 +296,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 
 			this.test();
 
-			Helpers.printDebugLow(
+			printDebugLow(
 				this.debugVerbosityLevel,
 				'Tested upload status of ResumableChunk before uploading. Chunk already uploaded: ' +
 					(this.status === ResumableChunkStatus.SUCCESS ? 'yes' : 'no'),
@@ -318,10 +306,10 @@ export default class ResumableChunk extends ResumableEventHandler {
 			return;
 		}
 
-		Helpers.printDebugLow(this.debugVerbosityLevel, 'Starting upload of ResumableChunk...', this);
+		printDebugLow(this.debugVerbosityLevel, 'Starting upload of ResumableChunk...', this);
 
 		// Set up request and listen for event
-		Helpers.printDebugHigh(
+		printDebugHigh(
 			this.debugVerbosityLevel,
 			'Creating XHR for upload of ResumableChunk...',
 			this,
@@ -353,33 +341,29 @@ export default class ResumableChunk extends ResumableEventHandler {
 			var status = this.status;
 			switch (status) {
 				case ResumableChunkStatus.SUCCESS:
-					Helpers.printDebugHigh(
+					printDebugHigh(
 						this.debugVerbosityLevel,
 						'Handling "chunkSuccess" in ResumableChunk...',
 						this,
 					);
 					this.fire('chunkSuccess', uploadTaskId, this.message());
-					Helpers.printDebugHigh(
+					printDebugHigh(
 						this.debugVerbosityLevel,
 						'Handled "chunkSuccess" in ResumableChunk.',
 						this,
 					);
 					break;
 				case ResumableChunkStatus.ERROR:
-					Helpers.printDebugHigh(
+					printDebugHigh(
 						this.debugVerbosityLevel,
 						'Handling "chunkError" in ResumableChunk...',
 						this,
 					);
 					this.fire('chunkError', uploadTaskId, this.message());
-					Helpers.printDebugHigh(
-						this.debugVerbosityLevel,
-						'Handled "chunkError" in ResumableChunk.',
-						this,
-					);
+					printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkError" in ResumableChunk.', this);
 					break;
 				default:
-					Helpers.printDebugHigh(
+					printDebugHigh(
 						this.debugVerbosityLevel,
 						'Handling "chunkRetry" in ResumableChunk...',
 						this,
@@ -394,11 +378,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 					} else {
 						this.send(uploadTaskId, isFinalCheck);
 					}
-					Helpers.printDebugHigh(
-						this.debugVerbosityLevel,
-						'Handled "chunkRetry" in ResumableChunk.',
-						this,
-					);
+					printDebugHigh(this.debugVerbosityLevel, 'Handled "chunkRetry" in ResumableChunk.', this);
 					break;
 			}
 		};
@@ -406,7 +386,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 		this.xhr.addEventListener('error', doneHandler, false);
 		this.xhr.addEventListener('timeout', doneHandler, false);
 
-		Helpers.printDebugHigh(
+		printDebugHigh(
 			this.debugVerbosityLevel,
 			'Created XHR for upload of ResumableChunk.',
 			this,
@@ -414,7 +394,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 		);
 
 		// Set up the basic query data from Resumable
-		Helpers.printDebugHigh(
+		printDebugHigh(
 			this.debugVerbosityLevel,
 			'Creating data for XHR for upload of ResumableChunk...',
 			this,
@@ -430,7 +410,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 		// Add data from the query options
 		if (this.method === 'octet') {
 			data = bytes;
-			Helpers.printDebugHigh(
+			printDebugHigh(
 				this.debugVerbosityLevel,
 				'Created "octet" data for XHR for upload of ResumableChunk.',
 				this,
@@ -444,7 +424,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 			switch (this.chunkFormat) {
 				case 'blob':
 					data.append(parameterNamespace + this.fileParameterName, bytes, this.fileObj.fileName);
-					Helpers.printDebugHigh(
+					printDebugHigh(
 						this.debugVerbosityLevel,
 						'Created "blob" data for XHR for upload of ResumableChunk.',
 						this,
@@ -455,14 +435,14 @@ export default class ResumableChunk extends ResumableEventHandler {
 					var fr = new FileReader();
 					fr.onload = () => {
 						data.append(parameterNamespace + this.fileParameterName, fr.result);
-						Helpers.printDebugHigh(
+						printDebugHigh(
 							this.debugVerbosityLevel,
 							'Created "base64" data for XHR for upload of ResumableChunk.',
 							this,
 							data,
 						);
 						this.xhr.send(data);
-						Helpers.printDebugHigh(
+						printDebugHigh(
 							this.debugVerbosityLevel,
 							'Sent XHR for upload of ResumableChunk.',
 							this,
@@ -476,14 +456,14 @@ export default class ResumableChunk extends ResumableEventHandler {
 
 		let target = this.getTarget('upload');
 
-		Helpers.printDebugHigh(
+		printDebugHigh(
 			this.debugVerbosityLevel,
 			'Opening XHR for upload of ResumableChunk...',
 			this,
 			this.xhr,
 		);
 		this.xhr.open(this.uploadMethod, target);
-		Helpers.printDebugHigh(
+		printDebugHigh(
 			this.debugVerbosityLevel,
 			'Opened XHR for upload of ResumableChunk.',
 			this,
@@ -499,7 +479,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 
 		if (this.chunkFormat === 'blob') {
 			this.xhr.send(data);
-			Helpers.printDebugHigh(
+			printDebugHigh(
 				this.debugVerbosityLevel,
 				'Sent XHR for upload of ResumableChunk.',
 				this,
@@ -507,7 +487,7 @@ export default class ResumableChunk extends ResumableEventHandler {
 			);
 		}
 
-		Helpers.printDebugLow(this.debugVerbosityLevel, 'Started upload of ResumableChunk.', this);
+		printDebugLow(this.debugVerbosityLevel, 'Started upload of ResumableChunk.', this);
 	}
 
 	/** Return the response text of the underlying XMLHttpRequest if it exists */
@@ -539,6 +519,6 @@ export default class ResumableChunk extends ResumableEventHandler {
 	/** Mark this chunk as completed because it was already uploaded to the server. */
 	markComplete(): void {
 		this.isMarkedComplete = true;
-		Helpers.printDebugLow(this.debugVerbosityLevel, 'Marked ResumableChunk as complete.', this);
+		printDebugLow(this.debugVerbosityLevel, 'Marked ResumableChunk as complete.', this);
 	}
 }

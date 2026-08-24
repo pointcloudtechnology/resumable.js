@@ -1,19 +1,14 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "target": "es2015",
-    "lib": [
-      "es2015",
-      "dom",
-      "ES2020.Promise",
-      "ES2019.Array",
-      "ES2019.Object"
-    ],
-    "sourceMap": true,
-    "declaration": true,
-    "outDir": "dist"
-  },
-  "include": [
-    "./src/**/*"
-  ]
+	"include": ["./src/**/*", "./vite.config.ts"],
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"lib": ["ESNext", "DOM"],
+		"exactOptionalPropertyTypes": true,
+		"noUncheckedIndexedAccess": true,
+		"esModuleInterop": true,
+		"isolatedModules": true,
+		"forceConsistentCasingInFileNames": true
+	}
 }

@@ -15,6 +15,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [8.0.0]
+This release modernizes the internal tooling and improves the module structure of the library bundle.
+
+### BREAKING
+* This library is now published as ESM-only
+* All types are now exported from the main module, such that you may have to adapt your import paths:
+  ```ts
+  // old
+  import type {ResumableConfiguration} from '@pointcloudtechnology/resumablejs/dist/types/types';
+  // new
+  import type {ResumableConfiguration} from '@pointcloudtechnology/resumablejs';
+  ```
+* Similarly, the helpers module has its own subpath export now. Additionally, the ResumableHelpers class was removed
+  and all of its methods are now exported as single functions (the `flattenDeep` method was removed entirely).
+  ```ts
+  // old
+  import ResumableHelpers from '@pointcloudtechnology/resumablejs/dist/helpers';
+
+  ResumableHelpers.generateUniqueIdentifier(file);
+
+  // new
+  import {generateUniqueIdentifier} from '@pointcloudtechnology/resumablejs/helpers';
+
+  generateUniqueIdentifier(file);
+  ```
+
+### Changed
+* All library types are exported from the main module.
+* The `ResumableHelpers` class was removed and all of its methods are single functions now.
+* The types of some of those functions were improved.
+
+### Removed
+* Legacy build dependencies (Webpack and several Webpack plugins/loaders) were removed.
+* Legacy build configurations (`bower.json`, `component.json`, `webpack.config.js`) were removed.
+* The `flattenDeep` helper method was removed. Use the ES-native `.flat(Infinity)` method for arrays instead.
+
+### Internal
+* Setup pnpm as new package manager.
+* Setup Vite+ toolchain for building, formatting, and linting.
+* Update TypeScript to v7.
+* Format all files with Oxfmt (Vite+).
+
 ## [7.0.1]
 This is an npm only release to fix the bundling of the package (7.0.0 was not the production bundle but the dev bundle).
 

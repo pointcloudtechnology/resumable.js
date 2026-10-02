@@ -1409,6 +1409,24 @@ export class Resumable extends ResumableEventHandler {
 
 		if (fileIndex >= 0) {
 			this.files[fileCategory].splice(fileIndex, 1);
+
+			// The upload tasks and chunks refer to files by their position in the files array, so the offsets of all
+			// following files (and the file indices of upload tasks pointing to them) have to be shifted accordingly.
+			// Otherwise upload tasks won't recognize their finished chunks anymore and stop uploading.
+			for (let i = fileIndex; i < this.files[fileCategory].length; i++) {
+				this.files[fileCategory][i].offset = i;
+			}
+
+			const fileCategoryIndex = this.fileCategories.indexOf(fileCategory);
+			for (const [, uploadTask] of this.uploadTasks) {
+				if (
+					uploadTask.fileCategoryIndex === fileCategoryIndex &&
+					uploadTask.fileIndex !== undefined &&
+					uploadTask.fileIndex > fileIndex
+				) {
+					uploadTask.fileIndex--;
+				}
+			}
 		}
 		printDebugLow(this.debugVerbosityLevel, 'Removed file.', file);
 	}

@@ -100,6 +100,14 @@ export default class ResumableFile extends ResumableEventHandler {
 		return this._offset;
 	}
 
+	/**
+	 * Has to be kept in sync with the position of this file in the files array of its file category,
+	 * e.g. after another file was removed from that array.
+	 */
+	set offset(offset: number) {
+		this._offset = offset;
+	}
+
 	get fileCategory(): string {
 		return this._fileCategory;
 	}

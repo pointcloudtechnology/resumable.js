@@ -10,11 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Fixed
-* Fix chunks waiting for `chunkStuckTimeout` before uploading when a file was removed (#58)
 
 ### Changed
 
 ### Removed
+
+## [8.0.1]
+### Fixed
+* Fix chunks waiting for `chunkStuckTimeout` before uploading when a file was removed (#58)
 
 ## [8.0.0]
 This release modernizes the internal tooling and improves the module structure of the library bundle.
